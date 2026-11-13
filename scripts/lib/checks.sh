@@ -102,7 +102,7 @@ run_python_checks() {
 		echo >&2 "❌ python check: pyright missing"
 		return 1
 	}
-	pyright -- "${CHECK_PY_FILES[@]}"
+	pyright "${CHECK_PY_FILES[@]}"
 }
 
 run_lizard_checks() {

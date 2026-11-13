@@ -1,6 +1,10 @@
 {
   "include": ["tools", "skills"],
   "exclude": ["**/__pycache__"],
+  "executionEnvironments": [
+    { "root": "skills/pr-digest/scripts" },
+    { "root": "." }
+  ],
   "typeCheckingMode": "strict",
   "pythonVersion": "3.11"
 }

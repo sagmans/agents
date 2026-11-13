@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+# Resolve symlinks so `./setup` finds `tools/agents_cli` even when invoked via a link.
+set -eu
+
+SELF="$0"
+while [ -L "$SELF" ]; do
+	DIR="$(CDPATH='' cd -- "$(dirname -- "$SELF")" && pwd -P)"
+	LINK="$(readlink -- "$SELF")"
+	case "$LINK" in
+	/*) SELF="$LINK" ;;
+	*) SELF="$DIR/$LINK" ;;
+	esac
+done
+
+SCRIPT_DIR="$(CDPATH='' cd -- "$(dirname -- "$SELF")" && pwd -P)"
+export PYTHONPATH="${SCRIPT_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
+exec python3 -m tools.agents_cli "$@"
