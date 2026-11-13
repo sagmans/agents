@@ -1,0 +1,18 @@
+{
+  "name": "sagmans-agents-marketplace",
+  "owner": {
+    "name": "sagmans"
+  },
+  "metadata": {
+    "description": "Plug-and-play catalog of portable engineering skills and agent workflows."
+  },
+  "plugins": [
+    {
+      "name": "sagmans-agents",
+      "source": "./",
+      "description": "Portable engineering skills catalog.",
+      "version": "0.1.0",
+      "license": "MIT"
+    }
+  ]
+}

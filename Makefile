@@ -10,7 +10,7 @@ hooks:
 validate:
 	@if [ -e ./setup ]; then \
 		if [ ! -x ./setup ]; then echo "setup exists but is not executable" >&2; exit 1; fi; \
-		./setup validate; \
+		./setup validate --strict; \
 	else \
 		echo "setup CLI not installed yet"; \
 	fi

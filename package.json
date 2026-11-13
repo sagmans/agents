@@ -1,0 +1,21 @@
+{
+  "name": "@sagmans/agents",
+  "version": "0.1.0",
+  "description": "Portable engineering skills, role definitions, prompts, themes, and client adapters.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sagmans/agents.git"
+  },
+  "pi": {
+    "skills": [
+      "./skills"
+    ],
+    "prompts": [
+      "./prompts"
+    ],
+    "themes": [
+      "./themes"
+    ]
+  }
+}

@@ -96,7 +96,7 @@ if [ -e ./setup ]; then
 		exit 1
 	fi
 	echo "==> Catalog validation"
-	./setup validate
+	./setup validate --strict
 fi
 
 if [ "${#CHECK_SKILL_TESTS[@]}" -gt 0 ]; then

@@ -13,10 +13,17 @@ from .errors import RenderError
 from .render import ModelMap, load_model_map
 
 InputFn = Callable[[str], str]
+_QUIT_TOKENS: frozenset[str] = frozenset({"q", "quit", "exit"})
+
+
+class _WizardCancelled(Exception):
+    """Raised cleanly when the user enters a quit token during interactive prompts."""
 
 
 def _prompt_line(prompt: str, input_fn: InputFn, default: str = "") -> str:
     raw = input_fn(prompt).strip()
+    if raw.lower() in _QUIT_TOKENS:
+        raise _WizardCancelled
     return raw if raw else default
 
 
@@ -102,7 +109,7 @@ def run_interactive_wizard(
             default_model_map=default_model_map,
             input_fn=input_fn,
         )
-    except (EOFError, KeyboardInterrupt):
+    except (EOFError, KeyboardInterrupt, _WizardCancelled):
         print("\nAborted without changes.")
         return None
 
@@ -116,7 +123,7 @@ def _run_wizard_prompts(
     default_model_map: Path | None,
     input_fn: InputFn,
 ) -> Selection | None:
-    print("agents setup wizard (plug-and-play installer)")
+    print("agents setup wizard (plug-and-play installer; enter 'q' to quit)")
     print(f"Target home: {home}")
     print(
         f"Catalog: {len(catalog.skills)} skills, {len(catalog.roles)} roles, "
