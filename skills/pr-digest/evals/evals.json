@@ -1,0 +1,23 @@
+{
+  "skill_name": "pr-digest",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run pr-digest for the active PR on this branch. I want the full digest: title/body vs actual diff, standalone comments, unresolved review threads with outdated ones resolved, and current checks.",
+      "expected_output": "A structured PR digest report with read coverage, title/body sync classification, development digest, standalone comment triage, open thread triage including outdated-thread resolution counts, check table, and prioritized action list.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Here is the PR: https://github.com/example-org/example-repo/pull/123. Digest it before I hand it back to reviewers. Pay special attention to whether the description still matches what shipped and whether any review comments are real blockers.",
+      "expected_output": "A report that resolves the PR URL, fetches PR metadata/diff/comments/threads/checks, flags stale or incomplete PR prose, separates standalone comments from unresolved review threads, reports valid blockers, and lists check failures or pending checks.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Do a pr digest on this PR, but don't touch code. Clean up outdated GitHub review threads if they are marked outdated, then tell me what's left for the author.",
+      "expected_output": "A report-only digest that performs no code edits, resolves only GitHub-marked outdated unresolved threads, leaves valid or ambiguous threads open, and returns the remaining author actions with evidence links.",
+      "files": []
+    }
+  ]
+}

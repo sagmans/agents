@@ -1,0 +1,18 @@
+{
+  "repository": "https://github.com/sagmans/agents",
+  "license": "MIT",
+  "skills": [
+    "commit",
+    "create-agentsmd",
+    "decomposition-opportunities",
+    "diff-guide",
+    "git",
+    "git-tag",
+    "github",
+    "pr",
+    "pr-digest",
+    "pr-merge",
+    "report-card",
+    "ship"
+  ]
+}

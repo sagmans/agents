@@ -1,0 +1,40 @@
+{
+  "skill_name": "decomposition-opportunities",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Implement discount-rule support in `src/checkout.ts`. That file is already 470 lines, but release review starts in 30 minutes and the maintainer asked for the smallest diff in that same file. Inspect the related checkout code and tests, then make the production-ready change without creating maintenance debt.",
+      "expected_output": "The agent maps the existing responsibility and dependency seams, uses tests first, and keeps authored files below 500 physical lines by extracting a cohesive owned unit rather than appending or slicing mechanically.",
+      "files": [],
+      "expectations": [
+        "The plan does not consume the remaining lines in the 470-line file as a patch budget.",
+        "The plan extracts a cohesive discount-policy responsibility rather than a generic helper or arbitrary line range.",
+        "Every proposed authored file has a physical-line maximum of 499.",
+        "Characterization or focused behavior tests precede implementation."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Refactor the 920-line `src/import-orders.ts`. It mixes CLI parsing, CSV decoding, order validation, persistence, retry policy, and terminal output. Make every authored file smaller than 500 lines while preserving behavior and public compatibility.",
+      "expected_output": "The agent characterizes behavior, traces callers and dependencies, proposes responsibility-based boundaries and explicit interfaces, migrates incrementally, removes transitional paths, and verifies the resulting dependency graph and file sizes.",
+      "files": [],
+      "expectations": [
+        "Target files own coherent pipeline or policy responsibilities rather than arbitrary chunks.",
+        "The plan preserves the existing public entry point and migrates callers incrementally.",
+        "The design avoids catch-all utility, shared, or types modules.",
+        "Verification covers behavior, dependency cycles, and the 499-line maximum."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Review `src/money.ts` for clean-code and architecture improvements. It is a cohesive 240-line value-object module with focused tests and no known change pressure. Refactor anything that would improve long-term maintainability.",
+      "expected_output": "The agent avoids gratuitous splitting or speculative abstractions, preserves the cohesive module, and recommends changes only when repository evidence shows a concrete ownership, coupling, complexity, or discoverability problem.",
+      "files": [],
+      "expectations": [
+        "The cohesive 240-line module remains intact unless inspection reveals a concrete structural problem.",
+        "The plan rejects speculative helpers, factories, ports, or type extraction.",
+        "Any recommended cleanup is evidence-backed and behavior-preserving."
+      ]
+    }
+  ]
+}

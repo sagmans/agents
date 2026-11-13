@@ -1,0 +1,23 @@
+{
+  "skill_name": "create-agentsmd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a root AGENTS.md for this small TypeScript package. Inspect the repository first, derive the real setup and validation commands, and keep the result concise.",
+      "expected_output": "A root AGENTS.md grounded in manifests, CI, tests, and existing docs, with verified commands and no generic filler.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Audit our existing AGENTS.md against https://agents.md/ and fix only material problems. It currently duplicates most of README and includes several commands that may be stale.",
+      "expected_output": "A minimal revision preserving valid local constraints while removing duplication and correcting commands from repository evidence.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "This monorepo already has a root AGENTS.md. Add agent guidance for packages/payments only if that subtree genuinely needs separate instructions, and avoid contradicting the root file.",
+      "expected_output": "An evidence-based placement decision and, when justified, compatible nested guidance limited to payments-specific commands and constraints.",
+      "files": []
+    }
+  ]
+}
