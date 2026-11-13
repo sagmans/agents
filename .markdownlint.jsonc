@@ -1,0 +1,8 @@
+// Repository Markdown lint configuration extending the shared hook defaults.
+// Any rule relaxation requires an explicit written justification beside it.
+{
+  "extends": ".githooks/lib/markdownlint.jsonc",
+  // Prompt definitions, skills, and role specifications use natural paragraph
+  // widths so wording stays intact for copy-paste into agent system prompts.
+  "MD013": false
+}

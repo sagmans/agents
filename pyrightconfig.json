@@ -1,0 +1,6 @@
+{
+  "include": ["tools", "skills"],
+  "exclude": ["**/__pycache__"],
+  "typeCheckingMode": "strict",
+  "pythonVersion": "3.11"
+}

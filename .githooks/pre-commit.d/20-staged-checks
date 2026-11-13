@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Fast repo-specific staged checks: personal-data scan on changed staged blobs
+# plus shell/JSON/Python/complexity/SAST checks on staged code snapshots.
+set -euo pipefail
+
+# shellcheck source-path=SCRIPTDIR source=../lib/helpers.sh
+. "${HOOK_HELPERS:?run from .githooks (scripts/setup-hooks)}"
+
+REPO_ROOT="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
+cd "$REPO_ROOT"
+
+tmp="$(mktemp -d "${TMPDIR:-/tmp}/hook-staged-checks.XXXXXX")"
+cleanup() {
+	case "$tmp" in
+	*/hook-staged-checks.*) rm -rf -- "$tmp" ;;
+	esac
+}
+trap cleanup EXIT
+
+raw_file="$tmp/staged-raw"
+staged_git diff --cached --raw -z --no-renames --diff-filter=ACM >"$raw_file"
+
+tree="$tmp/tree"
+mkdir -p "$tree"
+staged_git checkout-index -a -f --prefix="$tree/"
+
+if [ -x "$tree/scripts/personal-scan.sh" ]; then
+	"$tree/scripts/personal-scan.sh" --staged
+else
+	"$REPO_ROOT/scripts/personal-scan.sh" --staged
+fi
+
+if [ -f "$tree/scripts/lib/checks.sh" ]; then
+	# shellcheck source-path=SCRIPTDIR source=../../scripts/lib/checks.sh
+	. "$tree/scripts/lib/checks.sh"
+else
+	# shellcheck source-path=SCRIPTDIR source=../../scripts/lib/checks.sh
+	. "$REPO_ROOT/scripts/lib/checks.sh"
+fi
+
+reset_classified_lists
+while IFS= read -r -d '' meta && IFS= read -r -d '' path; do
+	read -r _ mode _ <<<"$meta"
+	case "$mode" in
+	100644 | 100755) ;;
+	*) continue ;;
+	esac
+	classify_repo_path "$path"
+done <"$raw_file"
+
+if [ "${#CHECK_JSON_FILES[@]}" -eq 0 ] && [ "${#CHECK_CODE_FILES[@]}" -eq 0 ]; then
+	exit 0
+fi
+
+(
+	cd "$tree"
+	run_json_checks
+	run_shell_checks
+	run_python_checks
+	run_lizard_checks
+	run_semgrep_checks "$REPO_ROOT/.githooks/lib/semgrep"
+)

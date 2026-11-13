@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Run full repository validation at each pushed branch tip before remote delivery.
+# Per-commit DCO, signature, commit message, and range gitleaks checks run in
+# .githooks/lib/checks/push.sh; skip redundant full-history gitleaks here.
+set -euo pipefail
+
+# shellcheck source-path=SCRIPTDIR source=../lib/helpers.sh
+. "${HOOK_HELPERS:?run from .githooks (scripts/setup-hooks)}"
+
+tips=()
+while read -r _lr local_sha _rr _remote_sha; do
+	[ -n "$local_sha" ] || continue
+	is_null_oid "$local_sha" && continue
+	tips+=("$local_sha")
+done <"$HOOK_STDIN_FILE"
+
+[ "${#tips[@]}" -gt 0 ] || exit 0
+
+unique_tips=()
+while IFS= read -r sha; do
+	[ -n "$sha" ] && unique_tips+=("$sha")
+done < <(printf '%s\n' "${tips[@]}" | awk '!seen[$0]++')
+
+for sha in "${unique_tips[@]}"; do
+	at_sha "$sha" ./scripts/check.sh --skip-gitleaks || exit 1
+done

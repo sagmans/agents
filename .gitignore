@@ -1,0 +1,14 @@
+# Keep research material, generated tool caches, and scratch worktrees local.
+*.pdf
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+node_modules/
+.worktrees/
+.clones/
+tmp/
+*.bak
+*.orig
+*.swp
