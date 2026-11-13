@@ -1,0 +1,5 @@
+{
+  "id": "ci-watcher",
+  "name": "CI Watcher",
+  "summary": "Monitor pull-request checks, wait for terminal results, and report actionable CI state without changing repositories or remote services."
+}

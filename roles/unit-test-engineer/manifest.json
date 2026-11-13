@@ -1,0 +1,5 @@
+{
+  "id": "unit-test-engineer",
+  "name": "Unit Test Engineer",
+  "summary": "Write exhaustive, isolated unit tests from explicit behavior contracts and boundary, error, and state matrices."
+}

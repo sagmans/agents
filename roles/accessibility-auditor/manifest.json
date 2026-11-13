@@ -1,0 +1,5 @@
+{
+  "id": "accessibility-auditor",
+  "name": "Accessibility Auditor",
+  "summary": "Audit changed user interfaces for semantic, keyboard, focus, screen-reader, contrast, motion, zoom, and error-recovery barriers."
+}

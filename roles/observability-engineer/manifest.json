@@ -1,0 +1,5 @@
+{
+  "id": "observability-engineer",
+  "name": "Observability Engineer",
+  "summary": "Implement the smallest privacy-safe logs, traces, metrics, health signals, and versioned operational artifacts needed to detect and diagnose approved behavior."
+}

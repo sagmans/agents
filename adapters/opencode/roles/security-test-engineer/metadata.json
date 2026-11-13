@@ -1,0 +1,10 @@
+{
+  "mode": "subagent",
+  "permissions": [
+    {
+      "action": "subagent",
+      "resource": "*",
+      "effect": "deny"
+    }
+  ]
+}

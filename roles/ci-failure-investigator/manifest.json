@@ -1,0 +1,5 @@
+{
+  "id": "ci-failure-investigator",
+  "name": "CI Failure Investigator",
+  "summary": "Trace a completed CI failure through logs, configuration, and local reproduction to an actionable root cause without changing code or remote state."
+}

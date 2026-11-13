@@ -21,23 +21,23 @@ EXEC_FILE_MODE = 0o755
 DIR_MODE = 0o755
 
 MAX_ID_LENGTH = 64
-ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 HEX_COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
 SAFE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.*-]+$")
 
 REQUIRED_ROLE_SECTIONS: tuple[str, ...] = (
-    "Identity",
-    "Core Mission",
-    "Scope",
-    "Inputs",
+    "Mission",
+    "Use When",
+    "Do Not Use When",
+    "Required Inputs",
+    "Preconditions and Blockers",
     "Workflow",
-    "Constraints",
-    "Quality Bar",
-    "Output Contract",
-    "Stop / Escalation Rules",
-    "Failure Modes",
-    "When to Load",
-    "References",
+    "Evidence Requirements",
+    "Decision Rules",
+    "Security and Mutation Guardrails",
+    "Handoff Contract",
+    "Output Format",
+    "Completion Criteria",
 )
 
 # Roles authorized to edit code directly without read-only OpenCode guardrails.
@@ -91,7 +91,7 @@ OPENCODE_ALLOWED_METADATA_FIELDS: frozenset[str] = frozenset(
 
 VALID_PI_PROMPT_MODES: frozenset[str] = frozenset({"append", "replace"})
 VALID_PI_THINKING_LEVELS: frozenset[str] = frozenset(
-    {"off", "minimal", "low", "medium", "high", "xhigh"}
+    {"off", "minimal", "low", "medium", "high", "xhigh", "max"}
 )
 VALID_PI_ISOLATIONS: frozenset[str] = frozenset({"off", "worktree"})
 VALID_PI_MEMORY_SCOPES: frozenset[str] = frozenset({"project", "local", "user"})

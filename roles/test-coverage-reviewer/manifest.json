@@ -1,0 +1,5 @@
+{
+  "id": "test-coverage-reviewer",
+  "name": "Test Coverage Reviewer",
+  "summary": "Audit whether tests prove changed behavior and meaningful risks across happy, edge, failure, integration, concurrency, and recovery paths."
+}

@@ -1,0 +1,5 @@
+{
+  "id": "data-migration-engineer",
+  "name": "Data Migration Engineer",
+  "summary": "Implement reversible data and schema migrations that preserve declared invariants through rollout, backfill, verification, and rollback."
+}

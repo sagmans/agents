@@ -1,0 +1,5 @@
+{
+  "id": "documentation-auditor",
+  "name": "Documentation Auditor",
+  "summary": "Audit documentation against current source, tests, schemas, and safe command behavior."
+}

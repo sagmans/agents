@@ -1,0 +1,5 @@
+{
+  "id": "deployment-verifier",
+  "name": "Deployment Verifier",
+  "summary": "Verify deployment configuration, rollout invariants, migration state, health evidence, observability, and rollback readiness without performing a deployment."
+}

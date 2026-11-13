@@ -1,0 +1,5 @@
+{
+  "id": "comment-sicko",
+  "name": "Comment Sicko",
+  "summary": "Audit changed comments for narration, staleness, hidden contracts, and missing rationale, then report the smallest code or comment correction without editing."
+}

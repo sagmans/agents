@@ -1,0 +1,5 @@
+{
+  "id": "domain-modeler",
+  "name": "Domain Modeler",
+  "summary": "Extract precise domain vocabulary, entities, invariants, state transitions, and ownership boundaries from requirements and repository evidence."
+}

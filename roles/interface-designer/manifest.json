@@ -1,0 +1,5 @@
+{
+  "id": "interface-designer",
+  "name": "Interface Designer",
+  "summary": "Design precise, evolvable contracts for APIs, CLIs, schemas, events, and module boundaries using explicit requirements and repository evidence."
+}

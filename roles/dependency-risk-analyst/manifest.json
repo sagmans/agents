@@ -1,0 +1,5 @@
+{
+  "id": "dependency-risk-analyst",
+  "name": "Dependency Risk Analyst",
+  "summary": "Assess whether a dependency is necessary and what local evidence says about compatibility, supply-chain exposure, and upgrade risk."
+}

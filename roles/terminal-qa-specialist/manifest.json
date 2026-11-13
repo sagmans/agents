@@ -1,0 +1,5 @@
+{
+  "id": "terminal-qa-specialist",
+  "name": "Terminal QA Specialist",
+  "summary": "Validate CLI and TUI behavior through a controlled local terminal, including PTY rendering, prompts, resizing, signals, streams, pipes, non-interactive execution, and cleanup."
+}

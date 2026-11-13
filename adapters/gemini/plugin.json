@@ -1,0 +1,12 @@
+{
+  "name": "sagmans-agents",
+  "displayName": "Agents Catalog",
+  "description": "Portable engineering skills and specialized agent role definitions designed for plug-and-play use.",
+  "version": "0.1.0",
+  "repository": "https://github.com/sagmans/agents",
+  "suggestedPrompts": [
+    "Audit this repository diff for security boundaries and failure handling",
+    "Digest the open pull request threads and summarize unresolved blockers",
+    "Commit staged changes atomically with DCO sign-off and GPG signing"
+  ]
+}

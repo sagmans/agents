@@ -1,0 +1,5 @@
+{
+  "id": "thermo-nuclear-review-subagent",
+  "name": "Thermo Nuclear Review",
+  "summary": "Run an adversarial, report-only audit of changed behavior for correctness, security, compatibility, developer experience, and feature-gate regressions."
+}

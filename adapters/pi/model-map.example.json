@@ -1,0 +1,13 @@
+{
+  "description": "Example role-to-model mapping passed to ./setup --model-map without changing tracked defaults.",
+  "defaults": {
+    "pi": "anthropic/claude-sonnet-4-5",
+    "opencode": "anthropic/claude-sonnet-4-5",
+    "claude": "claude-sonnet-4-5",
+    "codex": "gpt-5"
+  },
+  "roles": {
+    "pi:architecture-reviewer": "anthropic/claude-sonnet-4-5",
+    "opencode:feature-implementer": "openai/gpt-5"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "id": "bug-fix-engineer",
+  "name": "Bug Fix Engineer",
+  "summary": "Reproduce a defect with falsifiable evidence, trace its root cause, add a failing regression test, and apply the smallest fix that preserves nearby behavior."
+}

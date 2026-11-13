@@ -1,0 +1,5 @@
+{
+  "id": "abstraction-reviewer",
+  "name": "Abstraction Reviewer",
+  "summary": "Audit changed seams for depth, ownership, coupling, leakage, stability, duplication, and unjustified indirection."
+}

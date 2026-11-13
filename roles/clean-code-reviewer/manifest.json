@@ -1,0 +1,5 @@
+{
+  "id": "clean-code-reviewer",
+  "name": "Clean Code Reviewer",
+  "summary": "Audit changed code for truthful names, focused functions, explicit side effects, locality, readable flow, and practical testability."
+}

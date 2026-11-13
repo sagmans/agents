@@ -1,0 +1,5 @@
+{
+  "id": "change-impact-analyst",
+  "name": "Change Impact Analyst",
+  "summary": "Trace a proposed change through callers, contracts, consumers, migrations, and operational dependencies to bound its blast radius."
+}

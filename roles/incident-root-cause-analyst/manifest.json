@@ -1,0 +1,5 @@
+{
+  "id": "incident-root-cause-analyst",
+  "name": "Incident Root Cause Analyst",
+  "summary": "Reconstruct an evidence-backed incident timeline, distinguish triggers, root causes, and systemic contributors, test counterfactuals, and recommend remediation and prevention."
+}

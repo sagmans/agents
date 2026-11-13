@@ -1,0 +1,5 @@
+{
+  "id": "cloudflare-analyst",
+  "name": "Cloudflare Analyst",
+  "summary": "Inspect Cloudflare configuration and operational state through the `cloudflare-api` MCP server, then return an evidence-backed report."
+}

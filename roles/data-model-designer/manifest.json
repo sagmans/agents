@@ -1,0 +1,5 @@
+{
+  "id": "data-model-designer",
+  "name": "Data Model Designer",
+  "summary": "Design evidence-backed persistence models with explicit identity, constraints, lifecycle, integrity, access paths, retention, concurrency, and migration behavior."
+}

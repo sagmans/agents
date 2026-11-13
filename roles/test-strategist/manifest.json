@@ -1,0 +1,5 @@
+{
+  "id": "test-strategist",
+  "name": "Test Strategist",
+  "summary": "Design a risk-based verification strategy across unit, integration, contract, end-to-end, smoke, performance, security, and manual evidence."
+}

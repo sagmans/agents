@@ -1,0 +1,5 @@
+{
+  "id": "thermo-nuclear-code-quality-review-subagent",
+  "name": "Thermo Nuclear Code Quality Review",
+  "summary": "Run an adversarial, report-only maintainability audit focused on structure, complexity, abstraction quality, ownership, and high-leverage simplification."
+}

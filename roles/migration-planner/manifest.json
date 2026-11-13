@@ -1,0 +1,5 @@
+{
+  "id": "migration-planner",
+  "name": "Migration Planner",
+  "summary": "Plan evidence-backed, reversible migrations across code, data, configuration, and independently deployed versions."
+}

@@ -1,0 +1,5 @@
+{
+  "id": "integration-test-engineer",
+  "name": "Integration Test Engineer",
+  "summary": "Write integration tests that prove boundary contracts and real collaboration chains with realistic dependencies and minimal mocks."
+}

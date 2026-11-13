@@ -116,7 +116,7 @@ def _validate_id(value: Any, path: Path, label: str) -> str:
         raise CatalogValidationError(
             f"validate {label}",
             path,
-            f"invalid identifier {value!r} (lowercase alphanumeric and hyphens only)",
+            f"invalid identifier {value!r} (must start with lowercase alphanumeric; hyphens and underscores allowed)",
         )
     return value
 
@@ -205,8 +205,12 @@ def _validate_choice(value: Any, allowed: frozenset[str], path: Path, field: str
         )
 
 
-def _validate_string_list_or_str(value: Any, path: Path, field: str) -> None:
+def _validate_string_list_or_str(
+    value: Any, path: Path, field: str, *, allow_bool: bool = False
+) -> None:
     if value is None:
+        return
+    if allow_bool and isinstance(value, bool):
         return
     if isinstance(value, str):
         if not value.strip():
@@ -214,7 +218,12 @@ def _validate_string_list_or_str(value: Any, path: Path, field: str) -> None:
         return
     if isinstance(value, list) and all(isinstance(v, str) and v.strip() for v in cast(list[object], value)):
         return
-    raise CatalogValidationError("validate metadata", path, f"{field} must be a string or list of strings")
+    expected = (
+        "must be a boolean, string, or list of strings"
+        if allow_bool
+        else "must be a string or list of strings"
+    )
+    raise CatalogValidationError("validate metadata", path, f"{field} {expected}")
 
 
 def _validate_pi_metadata(metadata: dict[str, Any], path: Path) -> None:
@@ -228,7 +237,8 @@ def _validate_pi_metadata(metadata: dict[str, Any], path: Path) -> None:
     _validate_choice(metadata.get("thinking"), VALID_PI_THINKING_LEVELS, path, "thinking")
     _validate_choice(metadata.get("isolation"), VALID_PI_ISOLATIONS, path, "isolation")
     _validate_choice(metadata.get("memory"), VALID_PI_MEMORY_SCOPES, path, "memory")
-    for field in ("tools", "skills", "allowed_subagents", "disallowed_tools"):
+    _validate_string_list_or_str(metadata.get("skills"), path, "skills", allow_bool=True)
+    for field in ("tools", "allowed_subagents", "disallowed_tools"):
         _validate_string_list_or_str(metadata.get(field), path, field)
     session_dir = metadata.get("session_dir")
     if session_dir is not None and (not isinstance(session_dir, str) or not session_dir.strip()):
@@ -250,8 +260,12 @@ def _validate_permission_rule(raw_rule: object, idx: int, path: Path) -> tuple[s
     action, resource, effect = rule["action"], rule["resource"], rule["effect"]
     if not isinstance(action, str) or SAFE_KEY_PATTERN.fullmatch(action) is None:
         raise CatalogValidationError("validate opencode metadata", path, f"unsafe permission action at index {idx}")
-    if not isinstance(resource, str) or not resource.strip():
-        raise CatalogValidationError("validate opencode metadata", path, f"invalid resource at index {idx}")
+    if not isinstance(resource, str) or resource != "*":
+        raise CatalogValidationError(
+            "validate opencode metadata",
+            path,
+            f"unsupported permission resource {resource!r} at index {idx}; only '*' is supported",
+        )
     if not isinstance(effect, str) or effect not in VALID_PERMISSION_EFFECTS:
         raise CatalogValidationError("validate opencode metadata", path, f"invalid effect {effect!r}")
     return action, resource, effect

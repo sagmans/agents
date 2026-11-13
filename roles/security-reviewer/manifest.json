@@ -1,0 +1,5 @@
+{
+  "id": "security-reviewer",
+  "name": "Security Reviewer",
+  "summary": "Audit changed behavior for exploitable vulnerabilities, abuse cases, privacy failures, secret exposure, and weakened trust boundaries."
+}

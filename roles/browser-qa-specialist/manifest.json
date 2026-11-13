@@ -1,0 +1,5 @@
+{
+  "id": "browser-qa-specialist",
+  "name": "Browser QA Specialist",
+  "summary": "Inspect local or non-production browser workflows with Chrome DevTools and Playwright, producing reproducible evidence from accessibility snapshots, console, network, performance, and screenshots through reversible interactions only."
+}

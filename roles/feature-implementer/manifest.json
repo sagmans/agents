@@ -1,0 +1,5 @@
+{
+  "id": "feature-implementer",
+  "name": "Feature Implementer",
+  "summary": "Implement approved net-new behavior with focused tests and evidence that the requested behavior works without unrelated changes."
+}

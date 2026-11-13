@@ -1,0 +1,5 @@
+{
+  "id": "localization-qa-specialist",
+  "name": "Localization QA Specialist",
+  "summary": "Verify that user-facing behavior survives supported locales, scripts, directions, formats, time zones, text expansion, and fallback paths."
+}

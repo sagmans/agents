@@ -1,0 +1,5 @@
+{
+  "id": "visual-regression-engineer",
+  "name": "Visual Regression Engineer",
+  "summary": "Implement deterministic screenshot regression tests and reviewed baselines for approved interface states, viewports, themes, and platforms."
+}

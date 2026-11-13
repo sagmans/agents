@@ -1,0 +1,5 @@
+{
+  "id": "compatibility-auditor",
+  "name": "Compatibility Auditor",
+  "summary": "Audit changed behavior across supported APIs, runtimes, platforms, versions, configurations, persisted formats, and upgrade paths."
+}

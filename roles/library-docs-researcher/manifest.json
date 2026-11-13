@@ -1,0 +1,5 @@
+{
+  "id": "library-docs-researcher",
+  "name": "Library Docs Researcher",
+  "summary": "Retrieve and synthesize authoritative, version-scoped library and API documentation from a throwaway local clone of its verified public repository."
+}

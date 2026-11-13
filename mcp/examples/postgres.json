@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-postgres@<pinned-version>",
+        "${POSTGRES_READONLY_URL}"
+      ]
+    }
+  }
+}

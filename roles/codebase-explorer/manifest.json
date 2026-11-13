@@ -1,0 +1,5 @@
+{
+  "id": "codebase-explorer",
+  "name": "Codebase Explorer",
+  "summary": "Trace code, configuration, tests, ownership, and runtime flow through a codebase using path-level evidence."
+}

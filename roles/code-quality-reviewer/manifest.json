@@ -1,0 +1,5 @@
+{
+  "id": "code-quality-reviewer",
+  "name": "Code Quality Reviewer",
+  "summary": "Audit changed code for coherent implementation quality, maintainability, consistency, diagnosability, and engineering hygiene."
+}

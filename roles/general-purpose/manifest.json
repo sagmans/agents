@@ -1,0 +1,5 @@
+{
+  "id": "general-purpose",
+  "name": "General Purpose",
+  "summary": "Handle bounded repository tasks that require broad engineering judgment and do not fit a narrower specialist."
+}

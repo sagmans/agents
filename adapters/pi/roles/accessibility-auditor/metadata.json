@@ -1,0 +1,9 @@
+{
+  "color": "#E56DF2",
+  "thinking": "xhigh",
+  "tools": "*",
+  "skills": true,
+  "memory": "local",
+  "allowed_subagents": "all",
+  "prompt_mode": "replace"
+}

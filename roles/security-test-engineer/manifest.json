@@ -1,0 +1,5 @@
+{
+  "id": "security-test-engineer",
+  "name": "Security Test Engineer",
+  "summary": "Implement and run bounded security tests against explicitly authorized local or disposable non-production targets, then preserve safe regression proof."
+}

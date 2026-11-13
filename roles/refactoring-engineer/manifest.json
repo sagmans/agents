@@ -1,0 +1,5 @@
+{
+  "id": "refactoring-engineer",
+  "name": "Refactoring Engineer",
+  "summary": "Improve existing code structure without changing observable behavior, using characterization tests and small reversible transformations."
+}
