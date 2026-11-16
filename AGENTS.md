@@ -8,8 +8,9 @@ that works across Pi, OpenCode, Claude Code, Codex, Cursor, and Gemini CLI.
 
 ## Structure
 
+- `packs.json` - Declarative category packs grouping skills, roles, prompts, and commands
 - `skills/` - Portable `SKILL.md` packages and companion scripts/tests
-- `roles/` - Client-neutral role `DEFINITION.md` and `manifest.json` packages
+- `roles/<category>/<id>/` - Category-grouped role `DEFINITION.md` and `manifest.json` packages
 - `adapters/` - Client-specific role metadata, output styles, hooks, and plugins
 - `prompts/` - Reusable agent workflow prompts
 - `themes/` - UI theme configurations

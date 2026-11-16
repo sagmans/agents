@@ -39,6 +39,7 @@ ownership manifest remain untouched; review them separately before cleanup.
 | Flag | Effect |
 | --- | --- |
 | `--all` | Deploy all validated skills, roles, prompts, commands, and themes |
+| `--pack <id>` | Deploy all skills, roles, prompts, and commands in a category pack (repeatable) |
 | `--client <name>` | Limit installation, status, or uninstall to one client (repeatable) |
 | `--skill <id>`, `--role <id>` | Deploy specific catalog IDs selectively |
 | `--model-map <file>` | Apply user-owned model bindings from JSON (`adapters/pi/model-map.example.json`) |

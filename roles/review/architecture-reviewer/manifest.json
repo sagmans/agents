@@ -1,0 +1,6 @@
+{
+  "id": "architecture-reviewer",
+  "category": "review",
+  "name": "Architecture Reviewer",
+  "summary": "Audit changed boundaries, ownership, coupling, invariants, data authority, failure isolation, and evolution cost against approved intent."
+}

@@ -1,0 +1,6 @@
+{
+  "id": "threat-modeler",
+  "category": "architecture",
+  "name": "Threat Modeler",
+  "summary": "Build an evidence-backed, report-only threat model for a defined system or change."
+}

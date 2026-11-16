@@ -1,0 +1,90 @@
+{
+  "packs": [
+    {
+      "id": "delivery",
+      "name": "Delivery",
+      "summary": "Commit, branch, review-triage, tag, and ship repository changes.",
+      "skills": [
+        "commit",
+        "git",
+        "git-tag",
+        "github",
+        "pr",
+        "pr-digest",
+        "pr-merge",
+        "ship"
+      ],
+      "prompts": [],
+      "commands": [
+        "commit",
+        "fix-issue",
+        "issue",
+        "pr",
+        "release"
+      ]
+    },
+    {
+      "id": "review",
+      "name": "Review",
+      "summary": "Code quality, architecture, security review, and handoff reporting.",
+      "skills": [
+        "create-agentsmd",
+        "decomposition-opportunities",
+        "diff-guide",
+        "report-card"
+      ],
+      "prompts": [
+        "decomposition-opportunities",
+        "deep-code-review",
+        "deep-security-audit",
+        "test-review"
+      ],
+      "commands": [
+        "handoff",
+        "validate_pr_reviews"
+      ]
+    },
+    {
+      "id": "architecture",
+      "name": "Architecture",
+      "summary": "System boundaries, domain modeling, interface design, and migration planning.",
+      "skills": [],
+      "prompts": [],
+      "commands": [
+        "criticalthink"
+      ]
+    },
+    {
+      "id": "implementation",
+      "name": "Implementation",
+      "summary": "Mutating feature delivery, bug fixes, refactors, performance, and build work.",
+      "skills": [],
+      "prompts": [],
+      "commands": []
+    },
+    {
+      "id": "qa-testing",
+      "name": "QA & Testing",
+      "summary": "Automated test engineering and browser, mobile, terminal, usability, and localization QA.",
+      "skills": [],
+      "prompts": [],
+      "commands": []
+    },
+    {
+      "id": "ops-security",
+      "name": "Operations & Security",
+      "summary": "CI failure triage, incident root-cause analysis, observability, release readiness, and dependency risk.",
+      "skills": [],
+      "prompts": [],
+      "commands": []
+    },
+    {
+      "id": "research",
+      "name": "Research",
+      "summary": "Codebase exploration, upstream library documentation, and external web research.",
+      "skills": [],
+      "prompts": [],
+      "commands": []
+    }
+  ]
+}

@@ -15,6 +15,26 @@ SUPPORTED_CLIENTS: tuple[str, ...] = (
 
 MANIFEST_FILENAME = ".agents-manifest.json"
 MANIFEST_VERSION = 1
+PACKS_FILENAME = "packs.json"
+
+# Purpose-driven taxonomy shared by `roles/<category>/<id>/` and `packs.json`.
+VALID_CATEGORIES: tuple[str, ...] = (
+    "delivery",
+    "review",
+    "architecture",
+    "implementation",
+    "qa-testing",
+    "ops-security",
+    "research",
+)
+
+ROLE_MANIFEST_ALLOWED_FIELDS: frozenset[str] = frozenset(
+    {"id", "category", "name", "summary"}
+)
+
+PACK_ENTRY_ALLOWED_FIELDS: frozenset[str] = frozenset(
+    {"id", "name", "summary", "skills", "prompts", "commands"}
+)
 
 REG_FILE_MODE = 0o644
 EXEC_FILE_MODE = 0o755

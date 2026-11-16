@@ -1,0 +1,6 @@
+{
+  "id": "implementation-planner",
+  "category": "architecture",
+  "name": "Implementation Planner",
+  "summary": "Turn approved requirements and repository evidence into ordered, atomic implementation units with explicit ownership, dependencies, tests, validation, rollback, and commit seams."
+}

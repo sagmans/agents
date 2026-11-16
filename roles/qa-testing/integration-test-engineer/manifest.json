@@ -1,0 +1,6 @@
+{
+  "id": "integration-test-engineer",
+  "category": "qa-testing",
+  "name": "Integration Test Engineer",
+  "summary": "Write integration tests that prove boundary contracts and real collaboration chains with realistic dependencies and minimal mocks."
+}

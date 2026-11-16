@@ -8,7 +8,7 @@ for Codex without duplicating source files.
 | Asset | Source | Target Under `$HOME` |
 | --- | --- | --- |
 | Skills | `skills/<id>/` | `~/.codex/skills/<id>` |
-| Roles | `roles/<id>/` | `~/.codex/agents/<id>.md` |
+| Roles | `roles/<category>/<id>/` | `~/.codex/agents/<id>.md` |
 
 ## Usage
 

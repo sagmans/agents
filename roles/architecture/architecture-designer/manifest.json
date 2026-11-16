@@ -1,0 +1,6 @@
+{
+  "id": "architecture-designer",
+  "category": "architecture",
+  "name": "Architecture Designer",
+  "summary": "Design module or service boundaries and choose among major architectural tradeoffs using explicit constraints and repository evidence."
+}

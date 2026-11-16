@@ -10,10 +10,12 @@ from .catalog import Catalog
 from .constants import SUPPORTED_CLIENTS
 from .deploy import Selection
 from .errors import RenderError
+from .packs import expand_pack_assets
 from .render import ModelMap, load_model_map
 
 InputFn = Callable[[str], str]
 _QUIT_TOKENS: frozenset[str] = frozenset({"q", "quit", "exit"})
+_CUSTOM_TOKEN = "custom"
 
 
 class _WizardCancelled(Exception):
@@ -90,6 +92,45 @@ def _select_subset(
     return _parse_index_or_names(raw, items, allow_none=True)
 
 
+def _select_packs_or_custom(
+    catalog: Catalog, clients: tuple[str, ...], input_fn: InputFn
+) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
+    """Let users pick purpose packs quickly while keeping 'custom' per-asset selection."""
+    pack_ids = tuple(catalog.packs)
+    if pack_ids:
+        print("\nAvailable packs:")
+        for idx, pid in enumerate(pack_ids, 1):
+            p = catalog.packs[pid]
+            print(
+                f"  {idx}. {pid} ({len(p.skill_ids)} skills, {len(p.role_ids)} roles, "
+                f"{len(p.prompt_ids)} prompts, {len(p.command_ids)} commands) - {p.summary}"
+            )
+        raw = _prompt_line(
+            "Select packs ('all', 'custom', or comma numbers/names) [all]: ", input_fn, "all"
+        )
+        if raw.strip().lower() != _CUSTOM_TOKEN:
+            picked = _parse_index_or_names(raw, pack_ids)
+            if not picked:
+                raise RenderError("interactive setup", None, "no valid pack selected")
+            skills, roles, prompts, commands = expand_pack_assets(catalog.packs, picked)
+            return (
+                skills,
+                roles,
+                prompts if "pi" in clients else (),
+                commands if "opencode" in clients else (),
+            )
+
+    skill_ids = _select_subset("skills", tuple(sorted(catalog.skills)), input_fn)
+    role_ids = _select_subset("roles", tuple(sorted(catalog.roles)), input_fn)
+    prompt_ids = _select_subset("Pi prompts", tuple(sorted(catalog.prompts)), input_fn) if "pi" in clients else ()
+    command_ids = (
+        _select_subset("OpenCode commands", tuple(sorted(catalog.opencode_commands)), input_fn)
+        if "opencode" in clients
+        else ()
+    )
+    return skill_ids, role_ids, prompt_ids, command_ids
+
+
 def run_interactive_wizard(
     catalog: Catalog,
     *,
@@ -126,19 +167,12 @@ def _run_wizard_prompts(
     print("agents setup wizard (plug-and-play installer; enter 'q' to quit)")
     print(f"Target home: {home}")
     print(
-        f"Catalog: {len(catalog.skills)} skills, {len(catalog.roles)} roles, "
+        f"Catalog: {len(catalog.packs)} packs, {len(catalog.skills)} skills, {len(catalog.roles)} roles, "
         f"{len(catalog.prompts)} prompts, {len(catalog.opencode_commands)} commands, "
         f"{len(catalog.themes)} themes, {len(catalog.claude_styles)} styles"
     )
     clients = _select_clients(input_fn)
-    skill_ids = _select_subset("skills", tuple(sorted(catalog.skills)), input_fn)
-    role_ids = _select_subset("roles", tuple(sorted(catalog.roles)), input_fn)
-    prompt_ids = _select_subset("Pi prompts", tuple(sorted(catalog.prompts)), input_fn) if "pi" in clients else ()
-    command_ids = (
-        _select_subset("OpenCode commands", tuple(sorted(catalog.opencode_commands)), input_fn)
-        if "opencode" in clients
-        else ()
-    )
+    skill_ids, role_ids, prompt_ids, command_ids = _select_packs_or_custom(catalog, clients, input_fn)
     theme_ids = _select_subset("Pi themes", tuple(sorted(catalog.themes)), input_fn) if "pi" in clients else ()
     include_styles = (
         _prompt_yes_no("Install Claude output styles & hooks?", input_fn, default=False)

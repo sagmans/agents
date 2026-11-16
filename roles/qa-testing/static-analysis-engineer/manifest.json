@@ -1,0 +1,6 @@
+{
+  "id": "static-analysis-engineer",
+  "category": "qa-testing",
+  "name": "Static Analysis Engineer",
+  "summary": "Run and resolve compiler, type, lint, format, policy, and dependency diagnostics without suppressing valid findings."
+}

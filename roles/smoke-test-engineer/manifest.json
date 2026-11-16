@@ -1,5 +1,0 @@
-{
-  "id": "smoke-test-engineer",
-  "name": "Smoke Test Engineer",
-  "summary": "Create and run fast, release-blocking checks for startup and critical usage paths. Fail with enough evidence to identify the broken stage."
-}

@@ -1,0 +1,6 @@
+{
+  "id": "complexity-reviewer",
+  "category": "review",
+  "name": "Complexity Reviewer",
+  "summary": "Find avoidable algorithmic, cognitive, state, concurrency, dependency, and operational complexity introduced by changed code."
+}

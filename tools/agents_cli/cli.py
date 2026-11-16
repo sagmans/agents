@@ -20,7 +20,18 @@ from .deploy import (
 )
 from .errors import AgentsError
 from .interactive import is_interactive_tty, run_interactive_wizard
+from .packs import expand_pack_assets
 from .render import load_model_map, render_role_for_client
+
+_LIST_KINDS: tuple[str, ...] = (
+    "all",
+    "packs",
+    "skills",
+    "roles",
+    "prompts",
+    "commands",
+    "themes",
+)
 
 
 def _default_repo_root() -> Path:
@@ -36,6 +47,7 @@ def _add_selection_flags(parser: argparse.ArgumentParser, *, suppress_defaults: 
 
     parser.add_argument("--all", action="store_true", help="Install all skills, roles, prompts, commands, themes", **_kw(False))
     parser.add_argument("--client", action="append", choices=SUPPORTED_CLIENTS, help="Target client (repeatable)", **_kw(None))
+    parser.add_argument("--pack", action="append", help="Category pack ID to install (repeatable)", **_kw([]))
     parser.add_argument("--skill", action="append", help="Skill ID to install (repeatable)", **_kw([]))
     parser.add_argument("--role", action="append", help="Role ID to install (repeatable)", **_kw([]))
     parser.add_argument("--prompt", action="append", help="Prompt ID to install for Pi", **_kw([]))
@@ -71,8 +83,8 @@ def _build_parser() -> argparse.ArgumentParser:
     p_st = sub.add_parser("status", help="Show drift and ownership status")
     _add_selection_flags(p_st, suppress_defaults=True)
 
-    p_ls = sub.add_parser("list", help="List available skills, roles, prompts, commands, and themes")
-    p_ls.add_argument("--kind", choices=("all", "skills", "roles", "prompts", "commands", "themes"), default="all")
+    p_ls = sub.add_parser("list", help="List available packs, skills, roles, prompts, commands, and themes")
+    p_ls.add_argument("--kind", choices=_LIST_KINDS, default="all")
 
     p_ren = sub.add_parser("render", help="Print rendered client Markdown for one role")
     p_ren.add_argument("role_id", help="Role ID to render")
@@ -91,25 +103,45 @@ def _resolve_ids(requested: list[str], available: Mapping[str, object], kind: st
     return tuple(dict.fromkeys(requested))
 
 
+def _merge_unique(first: tuple[str, ...], second: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(dict.fromkeys((*first, *second)))
+
+
+def _resolve_asset_ids(
+    select_all: bool,
+    from_packs: tuple[str, ...],
+    requested: list[str],
+    available: Mapping[str, object],
+    kind: str,
+) -> tuple[str, ...]:
+    """Centralize all-catalog vs pack-expanded + explicit ID resolution."""
+    if select_all:
+        return tuple(sorted(available))
+    return _merge_unique(from_packs, _resolve_ids(requested, available, kind))
+
+
 def _selection_from_args(args: argparse.Namespace, catalog: Catalog, *, default_all: bool) -> Selection:
-    has_explicit_filters = any((args.skill, args.role, args.prompt, args.command, args.theme))
+    has_explicit_filters = any((args.pack, args.skill, args.role, args.prompt, args.command, args.theme))
     if args.all and has_explicit_filters:
-        raise AgentsError("select assets", None, "cannot combine --all with --skill/--role/--prompt/--command/--theme")
+        raise AgentsError(
+            "select assets", None, "cannot combine --all with --pack/--skill/--role/--prompt/--command/--theme"
+        )
 
     clients = tuple(dict.fromkeys(args.client)) if args.client else SUPPORTED_CLIENTS
     select_all = bool(args.all) or (default_all and not has_explicit_filters and not args.styles)
     if not has_explicit_filters and not args.styles and args.client:
         select_all = True
 
-    skill_ids = tuple(sorted(catalog.skills)) if select_all else _resolve_ids(args.skill, catalog.skills, "skill")
-    role_ids = tuple(sorted(catalog.roles)) if select_all else _resolve_ids(args.role, catalog.roles, "role")
-    prompt_ids = tuple(sorted(catalog.prompts)) if select_all else _resolve_ids(args.prompt, catalog.prompts, "prompt")
-    command_ids = (
-        tuple(sorted(catalog.opencode_commands))
-        if select_all
-        else _resolve_ids(args.command, catalog.opencode_commands, "command")
+    pack_ids = () if select_all else _resolve_ids(args.pack, catalog.packs, "pack")
+    p_skills, p_roles, p_prompts, p_commands = expand_pack_assets(catalog.packs, pack_ids)
+
+    skill_ids = _resolve_asset_ids(select_all, p_skills, args.skill, catalog.skills, "skill")
+    role_ids = _resolve_asset_ids(select_all, p_roles, args.role, catalog.roles, "role")
+    prompt_ids = _resolve_asset_ids(select_all, p_prompts, args.prompt, catalog.prompts, "prompt")
+    command_ids = _resolve_asset_ids(
+        select_all, p_commands, args.command, catalog.opencode_commands, "command"
     )
-    theme_ids = tuple(sorted(catalog.themes)) if select_all else _resolve_ids(args.theme, catalog.themes, "theme")
+    theme_ids = _resolve_asset_ids(select_all, (), args.theme, catalog.themes, "theme")
 
     return Selection(
         clients=clients,
@@ -136,6 +168,7 @@ def _print_summary(action: str, summary: DeploySummary) -> None:
 
 def _cmd_list(catalog: Catalog, kind: str) -> int:
     sections: list[tuple[str, list[str]]] = [
+        ("packs", list(catalog.packs)),
         ("skills", sorted(catalog.skills)),
         ("roles", sorted(catalog.roles)),
         ("prompts", sorted(catalog.prompts)),
@@ -145,15 +178,23 @@ def _cmd_list(catalog: Catalog, kind: str) -> int:
     for name, items in sections:
         if kind == "all" or kind == name:
             print(f"{name} ({len(items)}): {', '.join(items)}")
+            if kind == "packs" and name == "packs":
+                for pack_id in items:
+                    p = catalog.packs[pack_id]
+                    print(
+                        f"  {p.pack_id}: skills={len(p.skill_ids)} roles={len(p.role_ids)} "
+                        f"prompts={len(p.prompt_ids)} commands={len(p.command_ids)} - {p.summary}"
+                    )
     return 0
 
 
 def _cmd_validate(repo_root: Path, *, strict: bool) -> int:
     report = validate_catalog(repo_root, strict_nonempty=strict)
     print(
-        f"Valid catalog: {report.skills_count} skills, {report.roles_count} roles, "
-        f"{report.prompts_count} prompts, {report.commands_count} commands, "
-        f"{report.themes_count} themes, {report.styles_count} styles, {report.hooks_count} hooks"
+        f"Valid catalog: {report.packs_count} packs, {report.skills_count} skills, "
+        f"{report.roles_count} roles, {report.prompts_count} prompts, "
+        f"{report.commands_count} commands, {report.themes_count} themes, "
+        f"{report.styles_count} styles, {report.hooks_count} hooks"
     )
     return 0
 
@@ -203,7 +244,7 @@ def _cmd_install(catalog: Catalog, args: argparse.Namespace, argv: list[str]) ->
         return 0
     sel = _selection_from_args(args, catalog, default_all=bool(args.all))
     if not sel.has_assets:
-        raise AgentsError("install", None, "nothing selected; pass --all, --client, or asset flags")
+        raise AgentsError("install", None, "nothing selected; pass --all, --pack, --client, or asset flags")
     _print_summary("install", install_selection(catalog, args.home, sel))
     return 0
 

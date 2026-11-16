@@ -1,0 +1,6 @@
+{
+  "id": "build-config-engineer",
+  "category": "implementation",
+  "name": "Build Config Engineer",
+  "summary": "Change build, dependency, toolchain, generated-artifact, packaging, and CI configuration while preserving reproducibility and local/remote parity."
+}

@@ -7,8 +7,9 @@ All catalog assets follow strict structure and naming rules enforced by
 
 | Kind | Location | Required Structure |
 | --- | --- | --- |
+| Category pack | `packs.json` | Unique `id` in `VALID_CATEGORIES`, `name`, `summary`, and member `skills`, `prompts`, `commands` |
 | Skill | `skills/<id>/SKILL.md` | YAML frontmatter with matching `name` and non-empty `description` |
-| Role | `roles/<id>/` | `manifest.json` (`id`, `name`, `summary`) + `DEFINITION.md` |
+| Role | `roles/<category>/<id>/` | `manifest.json` (`id`, `category`, `name`, `summary`) + `DEFINITION.md` |
 | Pi role adapter | `adapters/pi/roles/<id>/metadata.json` | Optional keys in `PI_ALLOWED_METADATA_FIELDS`; no hardcoded `model` |
 | OpenCode adapter | `adapters/opencode/roles/<id>/metadata.json` | Optional keys in `OPENCODE_ALLOWED_METADATA_FIELDS`; non-mutating roles deny edits |
 | Prompt | `prompts/<id>.md` | Valid UTF-8 Markdown with H1 heading |

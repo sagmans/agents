@@ -6,6 +6,7 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 readonly REPO_ROOT
 
+readonly EXPECTED_PACKS='packs (7):'
 readonly EXPECTED_SKILLS='skills (12):'
 readonly EXPECTED_ROLES='roles (58):'
 readonly EXPECTED_PROMPTS='prompts (4):'
@@ -60,6 +61,7 @@ validate_out="$(./setup validate --strict)"
 printf '%s\n' "$validate_out"
 list_out="$(./setup list)"
 for marker in \
+	"$EXPECTED_PACKS" \
 	"$EXPECTED_SKILLS" \
 	"$EXPECTED_ROLES" \
 	"$EXPECTED_PROMPTS" \
@@ -67,6 +69,9 @@ for marker in \
 	"$EXPECTED_THEMES"; do
 	printf '%s\n' "$list_out" | grep -Fq -- "$marker" || fail "missing count marker: $marker"
 done
+packs_out="$(./setup list --kind packs)"
+printf '%s\n' "$packs_out" | grep -Fq 'delivery: skills=8 roles=0 prompts=0 commands=5' ||
+	fail "unexpected packs breakdown: $packs_out"
 
 # 2. Dry-run leaves target HOME untouched
 h1="$TMP_DIR/h1"
@@ -172,7 +177,35 @@ printf '%s\n' "$sym_err" | grep -Fq "unmanaged symlinked directory: $h_sym/.conf
 	fail "unexpected symlinked-parent error: $sym_err"
 [ ! -e "$ext_cmds/pr.md" ] || fail "installer wrote into external symlink target"
 
-# 9. Interactive quit leaves disk untouched and unknown ID fails closed
+# 9. Category pack install, interactive pack selection, and conflict guards
+h_pack="$TMP_DIR/h_pack"
+./setup --client opencode --pack delivery --pack architecture --home "$h_pack" >/dev/null
+assert_symlink "$h_pack/.config/opencode/skills/commit"
+[ ! -e "$h_pack/.config/opencode/skills/report-card" ] || fail "unselected review skill installed by delivery/architecture packs"
+assert_file "$h_pack/.config/opencode/agents/architecture-designer.md"
+[ ! -e "$h_pack/.config/opencode/agents/security-reviewer.md" ] || fail "unselected review role installed by delivery/architecture packs"
+assert_file "$h_pack/.config/opencode/commands/criticalthink.md"
+pack_status="$(./setup status --client opencode --pack delivery --pack architecture --home "$h_pack")"
+printf '%s\n' "$pack_status" | grep -Fq 'opencode: installed=24 stale=0 missing=0 unmanaged=0' ||
+	fail "unexpected pack status: $pack_status"
+
+h_wiz="$TMP_DIR/h_wiz"
+printf 'codex\nresearch\nn\n\nn\ny\n' | ./setup --interactive --home "$h_wiz" >/dev/null
+assert_file "$h_wiz/.codex/agents/codebase-explorer.md"
+[ ! -e "$h_wiz/.codex/skills/commit" ] || fail "research pack unexpectedly installed delivery skill"
+
+if bad_pack_err="$(./setup --pack no-such-pack --home "$h_wiz" 2>&1)"; then
+	fail "unknown pack ID unexpectedly succeeded"
+fi
+printf '%s\n' "$bad_pack_err" | grep -Fq 'unknown pack ID' ||
+	fail "unexpected unknown-pack error: $bad_pack_err"
+if mix_pack_err="$(./setup --all --pack delivery --home "$h_wiz" 2>&1)"; then
+	fail "--all combined with --pack unexpectedly succeeded"
+fi
+printf '%s\n' "$mix_pack_err" | grep -Fq 'cannot combine --all with --pack' ||
+	fail "unexpected --all/--pack conflict error: $mix_pack_err"
+
+# 10. Interactive quit leaves disk untouched and unknown ID fails closed
 h4="$TMP_DIR/h4"
 printf 'q\n' | ./setup --interactive --home "$h4" >/dev/null
 [ ! -e "$h4" ] || fail "interactive quit created $h4"
@@ -182,7 +215,7 @@ fi
 printf '%s\n' "$unknown_err" | grep -Fq 'unknown skill ID' ||
 	fail "unexpected unknown-skill error: $unknown_err"
 
-# 10. Commit helper refuses direct commit on main for unowned origin
+# 11. Commit helper refuses direct commit on main for unowned origin
 fake_repo="$TMP_DIR/unowned-repo"
 mkdir -p "$fake_repo"
 (

@@ -19,13 +19,26 @@ flowchart LR
 
 | Category | Count | Path | Notes |
 | --- | --- | --- | --- |
+| Packs | 7 | `packs.json` | `delivery`, `review`, `architecture`, `implementation`, `qa-testing`, `ops-security`, `research` |
 | Skills | 12 | `skills/` | Git, commit, PR triage/merge, diff guide, report card, AGENTS.md |
-| Roles | 58 | `roles/` | 43 read-only review/analysis roles + 15 mutating engineering roles |
+| Roles | 58 | `roles/<category>/` | 43 read-only review/analysis roles + 15 mutating engineering roles |
 | Pi Prompts | 4 | `prompts/` | Deep code review, security audit, test review, decomposition |
 | OpenCode Commands | 8 | `adapters/opencode/commands/` | Slash-command workflows for commit, issue, PR, handoff, release |
 | Pi Theme | 1 | `themes/` | `violet-orbit.json` |
 | Claude Extras | 2 | `adapters/claude/` | `visual-concise` output style and `visual-reminder.sh` hook |
 | Inert MCP Examples | 4 | `mcp/examples/` | Placeholders only (`${ENV_VAR}` and `<pinned-version>`) |
+
+### Category Packs
+
+| Pack | Skills | Roles | Prompts | Commands | Focus |
+| --- | --- | --- | --- | --- | --- |
+| `delivery` | 8 | 0 | 0 | 5 | Commit, branch, review-triage, tag, and ship changes |
+| `review` | 4 | 12 | 4 | 2 | Code quality, architecture, security review, and handoff reports |
+| `architecture` | 0 | 10 | 0 | 1 | System boundaries, domain modeling, interface design, and migration plans |
+| `implementation` | 0 | 7 | 0 | 0 | Mutating feature delivery, bug fixes, refactors, performance, and build/docs |
+| `qa-testing` | 0 | 14 | 0 | 0 | Automated test engineering plus browser, mobile, TUI, usability, and l10n QA |
+| `ops-security` | 0 | 10 | 0 | 0 | CI failure triage, incident RCA, observability, release readiness, and deps |
+| `research` | 0 | 5 | 0 | 0 | Codebase exploration, library docs, and external web research |
 
 ## Quick Start
 
@@ -61,11 +74,13 @@ cd agents
 # Install all assets across supported clients (with optional model map & Claude styles)
 ./setup --all --styles --model-map adapters/pi/model-map.example.json
 
-# Selective install or snapshot copy instead of symlinks
+# Selective install by category pack, asset ID, or snapshot copy
+./setup --pack delivery --pack review --client claude
 ./setup --client opencode --skill pr-digest --role architecture-reviewer
 ./setup --client codex --skill commit --copy
 
-# Inspect drift or cleanly remove managed entries
+# Inspect packs, drift, or cleanly remove managed entries
+./setup list --kind packs
 ./setup status
 ./setup uninstall
 ```
