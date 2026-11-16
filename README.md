@@ -12,7 +12,7 @@ flowchart LR
   SRC --> PKG["Native Manifests (package.json, .claude-plugin/, npx skills)"]
   ADP["Client Adapters (adapters/{pi,opencode,claude,codex,gemini})"] --> CLI
   MM["Optional --model-map JSON"] --> CLI
-  CLI --> OUT["Target Client Homes (~/.pi, ~/.config/opencode, ~/.claude, ~/.codex, ~/.cursor, ~/.gemini)"]
+  CLI --> OUT["Target Client Homes (~/.agents, ~/.pi, ~/.config/opencode, ~/.claude, ~/.codex, ~/.cursor, ~/.gemini)"]
 ```
 
 ## Catalog Contents
@@ -69,6 +69,11 @@ cd agents
 ./setup status
 ./setup uninstall
 ```
+
+Pi skills installed with `./setup --client pi` go to `~/.agents/skills`, which
+Pi discovers directly. Roles, prompts, and themes remain under `~/.pi/agent`.
+Existing duplicate skills are not moved automatically; see the
+[shared skills migration guidance](docs/compatibility.md#shared-pi-skills).
 
 ## Documentation and Security
 

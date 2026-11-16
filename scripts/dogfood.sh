@@ -12,6 +12,8 @@ readonly EXPECTED_PROMPTS='prompts (4):'
 readonly EXPECTED_COMMANDS='commands (8):'
 readonly EXPECTED_THEMES='themes (1):'
 readonly EXPECTED_PI_MODEL='model: "anthropic/claude-sonnet-4-5"'
+readonly SHARED_SKILLS_SUBPATH='.agents/skills'
+readonly LEGACY_PI_SKILLS_SUBPATH='.pi/agent/skills'
 readonly UNMANAGED_MARKER='user-owned-content'
 readonly TEST_BODY='Verify clean-room trunk protection behavior.'
 
@@ -72,6 +74,9 @@ h1="$TMP_DIR/h1"
 
 # 3. Full clean-room installation with model map and Claude styles
 ./setup --all --styles --model-map adapters/pi/model-map.example.json --home "$h1" >/dev/null
+# Pi discovers the shared location natively; a second deployment causes collisions.
+assert_symlink "$h1/$SHARED_SKILLS_SUBPATH/commit"
+[ ! -e "$h1/$LEGACY_PI_SKILLS_SUBPATH" ] || fail "installer created duplicate Pi skills"
 assert_symlink "$h1/.claude/skills/commit"
 assert_symlink "$h1/.config/opencode/skills/pr-digest"
 assert_file "$h1/.pi/agent/agents/architecture-reviewer.md"
@@ -108,6 +113,14 @@ fi
 printf '%s\n' "$conflict_err" | grep -Fq 'unmanaged destination exists:' ||
 	fail "unexpected conflict error: $conflict_err"
 assert_contains "$h2/.claude/skills/commit/SKILL.md" "$UNMANAGED_MARKER"
+mkdir -p "$h2/$SHARED_SKILLS_SUBPATH/commit"
+printf '%s\n' "$UNMANAGED_MARKER" >"$h2/$SHARED_SKILLS_SUBPATH/commit/SKILL.md"
+if shared_conflict_err="$(./setup --client pi --skill commit --home "$h2" 2>&1)"; then
+	fail "installer overwrote unmanaged shared skill"
+fi
+printf '%s\n' "$shared_conflict_err" | grep -Fq 'unmanaged destination exists:' ||
+	fail "unexpected shared conflict error: $shared_conflict_err"
+assert_contains "$h2/$SHARED_SKILLS_SUBPATH/commit/SKILL.md" "$UNMANAGED_MARKER"
 
 # 6. Sibling user file survives managed uninstall
 printf '%s\n' "$UNMANAGED_MARKER" >"$h1/.claude/agents/user-custom.md"
@@ -115,6 +128,7 @@ printf '%s\n' "$UNMANAGED_MARKER" >"$h1/.claude/agents/user-custom.md"
 assert_file "$h1/.claude/agents/user-custom.md"
 assert_contains "$h1/.claude/agents/user-custom.md" "$UNMANAGED_MARKER"
 [ ! -e "$h1/.claude/skills/commit" ] || fail "uninstall left managed Claude skill behind"
+[ ! -e "$h1/$SHARED_SKILLS_SUBPATH/commit" ] || fail "uninstall left managed shared skill behind"
 [ ! -e "$h1/.pi/agent/agents/architecture-reviewer.md" ] || fail "uninstall left managed Pi role behind"
 
 # 7. Snapshot --copy mode installs real directory, reports clean status, uninstalls via root flags
@@ -127,6 +141,19 @@ printf '%s\n' "$copy_status" | grep -Fq 'codex: installed=2 stale=0 missing=0 un
 	fail "unexpected copy status: $copy_status"
 ./setup --uninstall --client codex --home "$h3" >/dev/null
 [ ! -e "$h3/.codex/skills/commit" ] || fail "uninstall left copied skill behind"
+
+# Pi copy mode must retain shared-directory ownership without touching legacy content.
+h5="$TMP_DIR/h5"
+mkdir -p "$h5/$LEGACY_PI_SKILLS_SUBPATH/user-custom"
+printf '%s\n' "$UNMANAGED_MARKER" >"$h5/$LEGACY_PI_SKILLS_SUBPATH/user-custom/SKILL.md"
+./setup --client pi --skill commit --copy --home "$h5" >/dev/null
+[ -d "$h5/$SHARED_SKILLS_SUBPATH/commit" ] && [ ! -L "$h5/$SHARED_SKILLS_SUBPATH/commit" ] || fail "Pi --copy did not create shared directory"
+shared_copy_status="$(./setup status --client pi --skill commit --copy --home "$h5")"
+printf '%s\n' "$shared_copy_status" | grep -Fq 'pi: installed=1 stale=0 missing=0 unmanaged=0' ||
+	fail "unexpected Pi copy status: $shared_copy_status"
+./setup uninstall --client pi --home "$h5" >/dev/null
+[ ! -e "$h5/$SHARED_SKILLS_SUBPATH/commit" ] || fail "uninstall left copied shared skill behind"
+assert_contains "$h5/$LEGACY_PI_SKILLS_SUBPATH/user-custom/SKILL.md" "$UNMANAGED_MARKER"
 
 # 8. Interactive quit leaves disk untouched and unknown ID fails closed
 h4="$TMP_DIR/h4"

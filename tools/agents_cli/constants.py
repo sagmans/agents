@@ -101,7 +101,8 @@ VALID_PERMISSION_EFFECTS: frozenset[str] = frozenset({"allow", "ask", "deny"})
 # Subdirectories relative to `--home` where each client expects catalog assets.
 CLIENT_SUBPATHS: dict[str, dict[str, str]] = {
     "pi": {
-        "skills": ".pi/agent/skills",
+        # Native shared discovery avoids duplicate skills across global locations.
+        "skills": ".agents/skills",
         "roles": ".pi/agent/agents",
         "prompts": ".pi/agent/prompts",
         "themes": ".pi/agent/themes",
