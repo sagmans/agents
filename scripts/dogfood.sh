@@ -17,7 +17,8 @@ readonly LEGACY_PI_SKILLS_SUBPATH='.pi/agent/skills'
 readonly UNMANAGED_MARKER='user-owned-content'
 readonly TEST_BODY='Verify clean-room trunk protection behavior.'
 
-TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/agents-dogfood.XXXXXX")"
+TMP_BASE="${TMPDIR:-/tmp}"
+TMP_DIR="$(mktemp -d "${TMP_BASE%/}/agents-dogfood.XXXXXX")"
 readonly TMP_DIR
 
 cleanup() {
@@ -155,7 +156,23 @@ printf '%s\n' "$shared_copy_status" | grep -Fq 'pi: installed=1 stale=0 missing=
 [ ! -e "$h5/$SHARED_SKILLS_SUBPATH/commit" ] || fail "uninstall left copied shared skill behind"
 assert_contains "$h5/$LEGACY_PI_SKILLS_SUBPATH/user-custom/SKILL.md" "$UNMANAGED_MARKER"
 
-# 8. Interactive quit leaves disk untouched and unknown ID fails closed
+# 8. Symlinked destination directory preserves logical path in status and blocks writes
+h_sym="$TMP_DIR/h_sym"
+ext_cmds="$TMP_DIR/external-commands"
+mkdir -p "$h_sym/.config/opencode" "$ext_cmds"
+printf '%s\n' "$UNMANAGED_MARKER" >"$ext_cmds/commit.md"
+ln -s "$ext_cmds" "$h_sym/.config/opencode/commands"
+sym_status="$(./setup status --client opencode --command commit --home "$h_sym")"
+printf '%s\n' "$sym_status" | grep -Fq "unmanaged: $h_sym/.config/opencode/commands/commit.md" ||
+	fail "status leaked resolved symlink path: $sym_status"
+if sym_err="$(./setup --client opencode --command pr --home "$h_sym" 2>&1)"; then
+	fail "installer traversed unmanaged symlinked parent directory"
+fi
+printf '%s\n' "$sym_err" | grep -Fq "unmanaged symlinked directory: $h_sym/.config/opencode/commands" ||
+	fail "unexpected symlinked-parent error: $sym_err"
+[ ! -e "$ext_cmds/pr.md" ] || fail "installer wrote into external symlink target"
+
+# 9. Interactive quit leaves disk untouched and unknown ID fails closed
 h4="$TMP_DIR/h4"
 printf 'q\n' | ./setup --interactive --home "$h4" >/dev/null
 [ ! -e "$h4" ] || fail "interactive quit created $h4"
@@ -165,7 +182,7 @@ fi
 printf '%s\n' "$unknown_err" | grep -Fq 'unknown skill ID' ||
 	fail "unexpected unknown-skill error: $unknown_err"
 
-# 9. Commit helper refuses direct commit on main for unowned origin
+# 10. Commit helper refuses direct commit on main for unowned origin
 fake_repo="$TMP_DIR/unowned-repo"
 mkdir -p "$fake_repo"
 (

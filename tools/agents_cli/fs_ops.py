@@ -39,20 +39,44 @@ def read_json_object(
     return result
 
 
+def normalize_logical_path(candidate: Path) -> Path:
+    """Keep user-facing `$HOME` paths intact when parent directories are symlinks."""
+    try:
+        return Path(os.path.abspath(candidate.expanduser()))
+    except OSError as exc:
+        raise DeploymentError("validate destination", candidate, f"cannot normalize path: {exc}") from exc
+
+
 def validate_target_path(repo_root: Path, candidate: Path) -> Path:
     """Reject destinations inside `repo_root` so installs never pollute source trees."""
     resolved_root = repo_root.resolve()
+    logical = normalize_logical_path(candidate)
     try:
-        resolved = candidate.expanduser().resolve()
+        resolved = logical.resolve()
     except OSError as exc:
         raise DeploymentError("validate destination", candidate, f"cannot resolve path: {exc}") from exc
     if resolved == resolved_root or resolved_root in resolved.parents:
         raise DestinationConflictError(
             "validate destination",
-            resolved,
+            logical,
             "destination directory cannot reside inside repository root",
         )
-    return resolved
+    return logical
+
+
+def find_symlinked_subpath_component(home: Path, dest_dir: Path) -> Path | None:
+    """Prevent traversal into external trees when a subdirectory under `home` is a symlink."""
+    logical_home = normalize_logical_path(home)
+    try:
+        rel_parts = dest_dir.relative_to(logical_home).parts
+    except ValueError:
+        return dest_dir if dest_dir.is_symlink() else None
+    current = logical_home
+    for part in rel_parts:
+        current = current / part
+        if current.is_symlink():
+            return current
+    return None
 
 
 def _validate_manifest_entry_name(name: str, manifest_path: Path) -> None:

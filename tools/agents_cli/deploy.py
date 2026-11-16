@@ -12,6 +12,7 @@ from .errors import DeploymentError, DestinationConflictError
 from .fs_ops import (
     atomic_write_text,
     copy_directory_atomic,
+    find_symlinked_subpath_component,
     is_dir_copy_current,
     is_repo_owned_symlink,
     read_manifest,
@@ -200,11 +201,24 @@ def build_plan(catalog: Catalog, home: Path, sel: Selection) -> list[PlannedEntr
 
 
 def _preflight(
-    dest_dirs: list[Path], entries: list[PlannedEntry], repo_root: Path
+    home: Path,
+    dest_dirs: list[Path],
+    entries: list[PlannedEntry],
+    repo_root: Path,
+    *,
+    sync: bool = False,
 ) -> tuple[dict[Path, dict[str, dict[str, str]]], list[str]]:
     manifests: dict[Path, dict[str, dict[str, str]]] = {}
     conflicts: list[str] = []
-    for dest_dir in sorted(set(dest_dirs) | {e.dest_dir for e in entries}):
+    active_dirs = {e.dest_dir for e in entries}
+    for dest_dir in sorted(set(dest_dirs) | active_dirs):
+        symlink_comp = find_symlinked_subpath_component(home, dest_dir)
+        if symlink_comp is not None:
+            # Never trust or mutate external directories reached through a symlinked parent.
+            manifests[dest_dir] = {}
+            if sync or dest_dir in active_dirs:
+                conflicts.append(f"unmanaged symlinked directory: {symlink_comp}")
+            continue
         manifests[dest_dir] = read_manifest(dest_dir)
     for entry in entries:
         target = entry.dest_dir / entry.entry_name
@@ -329,7 +343,7 @@ def install_selection(catalog: Catalog, home: Path, sel: Selection) -> DeploySum
     """Validate preflight across all target directories, then atomically apply or preview."""
     entries = build_plan(catalog, home, sel)
     dest_dirs = _client_dest_dirs(catalog.repo_root, home, sel.clients)
-    manifests, conflicts = _preflight(dest_dirs, entries, catalog.repo_root)
+    manifests, conflicts = _preflight(home, dest_dirs, entries, catalog.repo_root, sync=sel.sync)
     if conflicts:
         raise DestinationConflictError(
             "install preflight",
@@ -364,7 +378,7 @@ def uninstall_selection(
     """Remove only manifest-owned entries for `clients`, never user files."""
     summary = DeploySummary(dry_run=dry_run)
     for dest_dir in _client_dest_dirs(catalog.repo_root, home, clients):
-        if not dest_dir.is_dir():
+        if find_symlinked_subpath_component(home, dest_dir) is not None or not dest_dir.is_dir():
             continue
         manifest = read_manifest(dest_dir)
         for name in sorted(list(manifest)):
@@ -403,7 +417,10 @@ def _client_status_for_dir(
     )
     entries = build_plan(catalog, home, client_sel)
     dest_dirs = _client_dest_dirs(catalog.repo_root, home, (client,))
-    manifests, _ = _preflight(dest_dirs, entries, catalog.repo_root)
+    manifests, _ = _preflight(home, dest_dirs, entries, catalog.repo_root)
+    symlinked_dirs = {
+        d for d in dest_dirs if find_symlinked_subpath_component(home, d) is not None
+    }
     desired_by_dir: dict[Path, set[str]] = {d: set() for d in dest_dirs}
     installed = stale = missing = unmanaged = 0
     details: list[str] = []
@@ -412,7 +429,9 @@ def _client_status_for_dir(
         desired_by_dir.setdefault(entry.dest_dir, set()).add(entry.entry_name)
         target = entry.dest_dir / entry.entry_name
         owned = manifests.get(entry.dest_dir, {})
-        is_owned = entry.entry_name in owned or is_repo_owned_symlink(target, catalog.repo_root)
+        is_owned = entry.dest_dir not in symlinked_dirs and (
+            entry.entry_name in owned or is_repo_owned_symlink(target, catalog.repo_root)
+        )
         if not target.exists() and not target.is_symlink():
             missing += 1
         elif not is_owned:
@@ -448,6 +467,6 @@ def has_managed_claude_styles(repo_root: Path, home: Path) -> bool:
     """Detect whether Claude output styles or hooks are already managed on disk."""
     for key in ("styles", "hooks"):
         dest_dir = validate_target_path(repo_root, home / CLIENT_SUBPATHS["claude"][key])
-        if read_manifest(dest_dir):
+        if find_symlinked_subpath_component(home, dest_dir) is None and read_manifest(dest_dir):
             return True
     return False
