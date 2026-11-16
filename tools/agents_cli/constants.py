@@ -85,6 +85,8 @@ MUTATING_ENGINEER_ROLES: frozenset[str] = frozenset(
 PI_ALLOWED_METADATA_FIELDS: frozenset[str] = frozenset(
     {
         "tools",
+        "extensions",
+        "exclude_extensions",
         "skills",
         "color",
         "prompt_mode",

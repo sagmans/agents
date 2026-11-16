@@ -87,10 +87,13 @@ assert_symlink "$h1/.claude/skills/commit"
 assert_symlink "$h1/.config/opencode/skills/pr-digest"
 assert_file "$h1/.pi/agent/agents/architecture-reviewer.md"
 assert_contains "$h1/.pi/agent/agents/architecture-reviewer.md" "$EXPECTED_PI_MODEL"
+assert_contains "$h1/.pi/agent/agents/architecture-reviewer.md" 'display_name: "Architecture Reviewer"'
 assert_file "$h1/.config/opencode/agents/architecture-reviewer.md"
-assert_contains "$h1/.config/opencode/agents/architecture-reviewer.md" '"edit": "deny"'
+assert_contains "$h1/.config/opencode/agents/architecture-reviewer.md" 'permissions: ['
+assert_contains "$h1/.config/opencode/agents/architecture-reviewer.md" '{"action":"edit","resource":"*","effect":"deny"}'
+assert_not_contains "$h1/.config/opencode/agents/architecture-reviewer.md" 'permission:'
 assert_file "$h1/.config/opencode/agents/feature-implementer.md"
-assert_not_contains "$h1/.config/opencode/agents/feature-implementer.md" '"edit": "deny"'
+assert_not_contains "$h1/.config/opencode/agents/feature-implementer.md" '{"action":"edit","resource":"*","effect":"deny"}'
 assert_file "$h1/.pi/agent/prompts/deep-code-review.md"
 assert_file "$h1/.pi/agent/themes/violet-orbit.json"
 assert_file "$h1/.config/opencode/commands/validate_pr_reviews.md"
@@ -205,7 +208,33 @@ fi
 printf '%s\n' "$mix_pack_err" | grep -Fq 'cannot combine --all with --pack' ||
 	fail "unexpected --all/--pack conflict error: $mix_pack_err"
 
-# 10. Interactive quit leaves disk untouched and unknown ID fails closed
+# 10. Overlay client_metadata and role_appendices render cleanly and reject frontmatter injection
+overlay_file="$TMP_DIR/overlay.json"
+cat >"$overlay_file" <<'EOF'
+{
+  "client_metadata": {
+    "pi": {
+      "extensions": true,
+      "exclude_extensions": ["pi-nvim", "pi-subagents"]
+    }
+  },
+  "role_appendices": {
+    "pi:browser-qa-specialist": "## Local Tool Binding\n\nUse configured local browser proxy."
+  }
+}
+EOF
+rendered_browser="$(./setup render browser-qa-specialist --client pi --model-map "$overlay_file")"
+printf '%s\n' "$rendered_browser" | grep -Fq 'extensions: true' || fail "missing overlay extensions"
+printf '%s\n' "$rendered_browser" | grep -Fq 'exclude_extensions: ["pi-nvim", "pi-subagents"]' || fail "missing overlay exclude_extensions"
+printf '%s\n' "$rendered_browser" | grep -Fq '## Local Tool Binding' || fail "missing overlay appendix"
+
+bad_overlay="$TMP_DIR/bad-overlay.json"
+printf '{"role_appendices":{"pi:ci-watcher":"---\\ninjected: true\\n---\\n"}}' >"$bad_overlay"
+if ./setup render ci-watcher --client pi --model-map "$bad_overlay" >/dev/null 2>&1; then
+	fail "overlay frontmatter injection unexpectedly succeeded"
+fi
+
+# 11. Interactive quit leaves disk untouched and unknown ID fails closed
 h4="$TMP_DIR/h4"
 printf 'q\n' | ./setup --interactive --home "$h4" >/dev/null
 [ ! -e "$h4" ] || fail "interactive quit created $h4"
@@ -215,7 +244,7 @@ fi
 printf '%s\n' "$unknown_err" | grep -Fq 'unknown skill ID' ||
 	fail "unexpected unknown-skill error: $unknown_err"
 
-# 11. Commit helper refuses direct commit on main for unowned origin
+# 12. Commit helper refuses direct commit on main for unowned origin
 fake_repo="$TMP_DIR/unowned-repo"
 mkdir -p "$fake_repo"
 (

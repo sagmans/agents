@@ -42,7 +42,7 @@ ownership manifest remain untouched; review them separately before cleanup.
 | `--pack <id>` | Deploy all skills, roles, prompts, and commands in a category pack (repeatable) |
 | `--client <name>` | Limit installation, status, or uninstall to one client (repeatable) |
 | `--skill <id>`, `--role <id>` | Deploy specific catalog IDs selectively |
-| `--model-map <file>` | Apply user-owned model bindings from JSON (`adapters/pi/model-map.example.json`) |
+| `--model-map <file>` | Apply user-owned model bindings, Pi `client_metadata`, and `role_appendices` from JSON (`adapters/pi/model-map.example.json`) |
 | `--copy` | Copy skill directories as snapshots instead of creating symlinks |
 | `--styles` | Install Claude Code visual output style and prompt-reminder hook |
 | `--dry-run` | Print planned operations without touching disk |

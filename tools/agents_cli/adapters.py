@@ -63,8 +63,9 @@ def validate_pi_metadata(metadata: dict[str, Any], path: Path) -> None:
     _validate_choice(metadata.get("thinking"), VALID_PI_THINKING_LEVELS, path, "thinking")
     _validate_choice(metadata.get("isolation"), VALID_PI_ISOLATIONS, path, "isolation")
     _validate_choice(metadata.get("memory"), VALID_PI_MEMORY_SCOPES, path, "memory")
+    _validate_string_list_or_str(metadata.get("extensions"), path, "extensions", allow_bool=True)
     _validate_string_list_or_str(metadata.get("skills"), path, "skills", allow_bool=True)
-    for field in ("tools", "allowed_subagents", "disallowed_tools"):
+    for field in ("tools", "exclude_extensions", "allowed_subagents", "disallowed_tools"):
         _validate_string_list_or_str(metadata.get(field), path, field)
     session_dir = metadata.get("session_dir")
     if session_dir is not None and (not isinstance(session_dir, str) or not session_dir.strip()):
