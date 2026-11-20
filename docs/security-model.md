@@ -54,7 +54,8 @@ Every commit and push passes through `.githooks/` and `scripts/check.sh`:
 
 1. `scripts/personal-scan.sh` blocks private paths, tokens, and internal IDs.
 2. `gitleaks` scans staged blobs and commit ranges for secrets.
-3. `pyright`, `lizard`, `semgrep`, `shellcheck`, `shfmt`, and `markdownlint-cli2`
-   enforce type, complexity, static analysis, shell, and documentation checks.
+3. `ruff`, `pyright`, `lizard`, `semgrep`, `shellcheck`, `shfmt`, and
+   `markdownlint-cli2` enforce formatting, lint, type, complexity, static
+   analysis, shell, and documentation checks (pinned in `mise.toml`).
 4. `scripts/dogfood.sh` exercises clean-room installation, drift detection, and
    fail-closed conflicts inside temporary `$HOME` directories.

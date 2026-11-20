@@ -87,21 +87,27 @@ class ValidationReport:
 
 
 def _read_catalog_json(path: Path, context: str) -> dict[str, Any]:
-    return read_json_object(path, context, lambda op, p, msg: CatalogValidationError(op, p, msg))
+    return read_json_object(
+        path, context, lambda op, p, msg: CatalogValidationError(op, p, msg)
+    )
 
 
 def _read_utf8_text(path: Path, context: str) -> str:
     try:
         return path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
-        raise CatalogValidationError(context, path, f"unreadable UTF-8 file: {exc}") from exc
+        raise CatalogValidationError(
+            context, path, f"unreadable UTF-8 file: {exc}"
+        ) from exc
 
 
 def _validate_contained_path(path: Path, repo_root: Path, context: str) -> None:
     try:
         resolved = path.resolve(strict=True)
     except (OSError, RuntimeError) as exc:
-        raise CatalogValidationError(context, path, f"unresolvable path: {exc}") from exc
+        raise CatalogValidationError(
+            context, path, f"unresolvable path: {exc}"
+        ) from exc
     if resolved != repo_root and repo_root not in resolved.parents:
         raise CatalogValidationError(context, path, "symlink escapes repository root")
 
@@ -131,7 +137,9 @@ def _extract_frontmatter(text: str, path: Path) -> tuple[dict[str, str], str]:
             end_index = idx
             break
     if end_index is None:
-        raise CatalogValidationError("validate skill", path, "unterminated YAML frontmatter")
+        raise CatalogValidationError(
+            "validate skill", path, "unterminated YAML frontmatter"
+        )
     fields = _parse_simple_frontmatter(lines[1:end_index], path)
     body = "\n".join(lines[end_index + 1 :]).strip() + "\n"
     return fields, body
@@ -149,7 +157,9 @@ def _parse_simple_frontmatter(lines: list[str], path: Path) -> dict[str, str]:
             fields[current_key] = f"{fields[current_key]} {stripped}".strip()
             continue
         if ":" not in raw:
-            raise CatalogValidationError("validate skill", path, f"malformed header line: {raw!r}")
+            raise CatalogValidationError(
+                "validate skill", path, f"malformed header line: {raw!r}"
+            )
         key, val = raw.split(":", 1)
         clean_key = key.strip()
         clean_val = val.strip().strip("'\"")
@@ -164,7 +174,9 @@ def _validate_skill_dir(skill_dir: Path, repo_root: Path) -> SkillPackage:
     skill_md = skill_dir / "SKILL.md"
     if not skill_md.is_file():
         raise CatalogValidationError("validate skill", skill_md, "missing SKILL.md")
-    fields, _ = _extract_frontmatter(_read_utf8_text(skill_md, "validate skill"), skill_md)
+    fields, _ = _extract_frontmatter(
+        _read_utf8_text(skill_md, "validate skill"), skill_md
+    )
     fm_name = fields.get("name", "")
     if fm_name != skill_id:
         raise CatalogValidationError(
@@ -174,13 +186,17 @@ def _validate_skill_dir(skill_dir: Path, repo_root: Path) -> SkillPackage:
         )
     description = fields.get("description", "").strip()
     if not description:
-        raise CatalogValidationError("validate skill", skill_md, "frontmatter description is empty")
+        raise CatalogValidationError(
+            "validate skill", skill_md, "frontmatter description is empty"
+        )
     return SkillPackage(skill_id=skill_id, description=description, path=skill_dir)
 
 
 def _validate_role_definition(definition_path: Path) -> str:
     if not definition_path.is_file():
-        raise CatalogValidationError("validate role", definition_path, "missing DEFINITION.md")
+        raise CatalogValidationError(
+            "validate role", definition_path, "missing DEFINITION.md"
+        )
     text = _read_utf8_text(definition_path, "validate role")
     headings = {
         m.group(1).strip()
@@ -196,21 +212,29 @@ def _validate_role_definition(definition_path: Path) -> str:
     return text.strip() + "\n"
 
 
-def _load_role_dir(repo_root: Path, role_dir: Path, expected_category: str) -> RolePackage:
+def _load_role_dir(
+    repo_root: Path, role_dir: Path, expected_category: str
+) -> RolePackage:
     _validate_contained_path(role_dir, repo_root, "validate role")
     role_id = _validate_id(role_dir.name, role_dir, "role")
     manifest_path = role_dir / "manifest.json"
     definition_path = role_dir / "DEFINITION.md"
     if not manifest_path.is_file():
-        raise CatalogValidationError("validate role", manifest_path, "missing manifest.json")
+        raise CatalogValidationError(
+            "validate role", manifest_path, "missing manifest.json"
+        )
     manifest = _read_catalog_json(manifest_path, "validate role manifest")
     unknown = sorted(set(manifest) - ROLE_MANIFEST_ALLOWED_FIELDS)
     if unknown:
         raise CatalogValidationError(
-            "validate role", manifest_path, f"disallowed manifest field(s): {', '.join(unknown)}"
+            "validate role",
+            manifest_path,
+            f"disallowed manifest field(s): {', '.join(unknown)}",
         )
     if manifest.get("id") != role_id:
-        raise CatalogValidationError("validate role", manifest_path, f"manifest id must match {role_id!r}")
+        raise CatalogValidationError(
+            "validate role", manifest_path, f"manifest id must match {role_id!r}"
+        )
     if manifest.get("category") != expected_category:
         raise CatalogValidationError(
             "validate role",
@@ -219,9 +243,13 @@ def _load_role_dir(repo_root: Path, role_dir: Path, expected_category: str) -> R
         )
     name, summary = manifest.get("name"), manifest.get("summary")
     if not isinstance(name, str) or not name.strip():
-        raise CatalogValidationError("validate role", manifest_path, "manifest name must be non-empty")
+        raise CatalogValidationError(
+            "validate role", manifest_path, "manifest name must be non-empty"
+        )
     if not isinstance(summary, str) or not summary.strip():
-        raise CatalogValidationError("validate role", manifest_path, "manifest summary must be non-empty")
+        raise CatalogValidationError(
+            "validate role", manifest_path, "manifest summary must be non-empty"
+        )
     body = _validate_role_definition(definition_path)
 
     pi_meta: dict[str, Any] = {}
@@ -267,12 +295,16 @@ def _load_roles_tree(resolved_root: Path) -> dict[str, RolePackage]:
         for role_entry in sorted(cat_entry.iterdir()):
             if not role_entry.is_dir():
                 raise CatalogValidationError(
-                    "validate role", role_entry, "unexpected file inside role category directory"
+                    "validate role",
+                    role_entry,
+                    "unexpected file inside role category directory",
                 )
             role = _load_role_dir(resolved_root, role_entry, cat_entry.name)
             if role.role_id in roles:
                 raise CatalogValidationError(
-                    "validate role", role_entry, f"duplicate role ID {role.role_id!r} across categories"
+                    "validate role",
+                    role_entry,
+                    f"duplicate role ID {role.role_id!r} across categories",
                 )
             roles[role.role_id] = role
     return roles
@@ -298,7 +330,9 @@ def _load_asset_files(
             _read_catalog_json(entry, f"validate {suffix} asset")
         else:
             _read_utf8_text(entry, f"validate {suffix} asset")
-        assets[asset_id] = AssetFile(asset_id=asset_id, path=entry, executable=executable)
+        assets[asset_id] = AssetFile(
+            asset_id=asset_id, path=entry, executable=executable
+        )
     return assets
 
 
@@ -342,17 +376,26 @@ def load_catalog(repo_root: Path, *, strict_nonempty: bool = False) -> Catalog:
         roles=roles,
         prompts=prompts,
         opencode_commands=opencode_commands,
-        themes=_load_asset_files(resolved_root / "themes", resolved_root, ".json", validate_json=True),
+        themes=_load_asset_files(
+            resolved_root / "themes", resolved_root, ".json", validate_json=True
+        ),
         claude_styles=_load_asset_files(
-            resolved_root / "adapters" / "claude" / "output-styles", resolved_root, ".md"
+            resolved_root / "adapters" / "claude" / "output-styles",
+            resolved_root,
+            ".md",
         ),
         claude_hooks=_load_asset_files(
-            resolved_root / "adapters" / "claude" / "hooks", resolved_root, ".sh", executable=True
+            resolved_root / "adapters" / "claude" / "hooks",
+            resolved_root,
+            ".sh",
+            executable=True,
         ),
     )
 
 
-def validate_catalog(repo_root: Path, *, strict_nonempty: bool = False) -> ValidationReport:
+def validate_catalog(
+    repo_root: Path, *, strict_nonempty: bool = False
+) -> ValidationReport:
     """Validate all catalog assets and return summary counts."""
     catalog = load_catalog(repo_root, strict_nonempty=strict_nonempty)
     return ValidationReport(

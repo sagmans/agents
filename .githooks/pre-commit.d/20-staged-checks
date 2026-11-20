@@ -17,36 +17,53 @@ cleanup() {
 }
 trap cleanup EXIT
 
-raw_file="$tmp/staged-raw"
-staged_git diff --cached --raw -z --no-renames --diff-filter=ACM >"$raw_file"
-
 tree="$tmp/tree"
 mkdir -p "$tree"
 staged_git checkout-index -a -f --prefix="$tree/"
 
+# Prevent mise shims from failing on the temporary snapshot's mise.toml.
+export MISE_IGNORED_CONFIG_PATHS="${MISE_IGNORED_CONFIG_PATHS:+$MISE_IGNORED_CONFIG_PATHS:}$tree"
+
+# Required tool-pin, lint, and typecheck configs must stay present in the staged index.
+for required_cfg in mise.toml ruff.toml pyrightconfig.json; do
+	if [ ! -s "$tree/$required_cfg" ]; then
+		echo >&2 "❌ pre-commit: $required_cfg is missing or empty in the staged index"
+		exit 1
+	fi
+done
+
 if [ -x "$tree/scripts/personal-scan.sh" ]; then
 	"$tree/scripts/personal-scan.sh" --staged
 else
-	"$REPO_ROOT/scripts/personal-scan.sh" --staged
+	echo >&2 "❌ pre-commit: scripts/personal-scan.sh is missing or not executable in the staged index"
+	exit 1
 fi
 
-if [ -f "$tree/scripts/lib/checks.sh" ]; then
+if [ -s "$tree/scripts/lib/checks.sh" ]; then
 	# shellcheck source-path=SCRIPTDIR source=../../scripts/lib/checks.sh
 	. "$tree/scripts/lib/checks.sh"
 else
-	# shellcheck source-path=SCRIPTDIR source=../../scripts/lib/checks.sh
-	. "$REPO_ROOT/scripts/lib/checks.sh"
+	echo >&2 "❌ pre-commit: scripts/lib/checks.sh is missing or empty in the staged index"
+	exit 1
 fi
+append_global_mise_path
 
 reset_classified_lists
-while IFS= read -r -d '' meta && IFS= read -r -d '' path; do
-	read -r _ mode _ <<<"$meta"
-	case "$mode" in
-	100644 | 100755) ;;
-	*) continue ;;
-	esac
-	classify_repo_path "$path"
-done <"$raw_file"
+if ! staged_git diff --cached --quiet -- mise.toml ruff.toml pyrightconfig.json scripts/lib/checks.sh; then
+	# A tool-pin, lint, typecheck, or check-helper change affects every tracked file.
+	classify_nul_paths "$tree" < <(staged_git ls-files --cached -z)
+else
+	raw_file="$tmp/staged-raw"
+	staged_git diff --cached --raw -z --no-renames --diff-filter=ACM >"$raw_file"
+	while IFS= read -r -d '' meta && IFS= read -r -d '' path; do
+		read -r _ mode _ <<<"$meta"
+		case "$mode" in
+		100644 | 100755) ;;
+		*) continue ;;
+		esac
+		classify_repo_path "$path"
+	done <"$raw_file"
+fi
 
 if [ "${#CHECK_JSON_FILES[@]}" -eq 0 ] && [ "${#CHECK_CODE_FILES[@]}" -eq 0 ]; then
 	exit 0

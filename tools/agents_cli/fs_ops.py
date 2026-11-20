@@ -6,8 +6,9 @@ import json
 import os
 import shutil
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 from .constants import (
     DIR_MODE,
@@ -27,7 +28,9 @@ def read_json_object(
     try:
         loaded: Any = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise error_factory(operation, path, f"unreadable or invalid JSON: {exc}") from exc
+        raise error_factory(
+            operation, path, f"unreadable or invalid JSON: {exc}"
+        ) from exc
     if not isinstance(loaded, dict):
         raise error_factory(operation, path, "expected top-level JSON object")
     raw_map = cast(dict[object, Any], loaded)
@@ -44,7 +47,9 @@ def normalize_logical_path(candidate: Path) -> Path:
     try:
         return Path(os.path.abspath(candidate.expanduser()))
     except OSError as exc:
-        raise DeploymentError("validate destination", candidate, f"cannot normalize path: {exc}") from exc
+        raise DeploymentError(
+            "validate destination", candidate, f"cannot normalize path: {exc}"
+        ) from exc
 
 
 def validate_target_path(repo_root: Path, candidate: Path) -> Path:
@@ -54,7 +59,9 @@ def validate_target_path(repo_root: Path, candidate: Path) -> Path:
     try:
         resolved = logical.resolve()
     except OSError as exc:
-        raise DeploymentError("validate destination", candidate, f"cannot resolve path: {exc}") from exc
+        raise DeploymentError(
+            "validate destination", candidate, f"cannot resolve path: {exc}"
+        ) from exc
     if resolved == resolved_root or resolved_root in resolved.parents:
         raise DestinationConflictError(
             "validate destination",
@@ -102,14 +109,20 @@ def read_manifest(dest_dir: Path) -> dict[str, dict[str, str]]:
     )
     version = raw.get("version")
     if type(version) is not int or version != MANIFEST_VERSION:
-        raise DeploymentError("read manifest", manifest_path, "unsupported manifest version")
+        raise DeploymentError(
+            "read manifest", manifest_path, "unsupported manifest version"
+        )
     raw_entries: Any = raw.get("entries", {})
     if not isinstance(raw_entries, dict):
-        raise DeploymentError("read manifest", manifest_path, "manifest entries must be an object")
+        raise DeploymentError(
+            "read manifest", manifest_path, "manifest entries must be an object"
+        )
     clean: dict[str, dict[str, str]] = {}
     for k, v in cast(dict[object, object], raw_entries).items():
         if not isinstance(k, str) or not isinstance(v, dict):
-            raise DeploymentError("read manifest", manifest_path, "invalid manifest entry shape")
+            raise DeploymentError(
+                "read manifest", manifest_path, "invalid manifest entry shape"
+            )
         _validate_manifest_entry_name(k, manifest_path)
         meta_dict = cast(dict[object, object], v)
         clean[k] = {str(sk): str(sv) for sk, sv in meta_dict.items()}
@@ -130,7 +143,9 @@ def atomic_write_text(path: Path, text: str, mode: int) -> None:
     except OSError as exc:
         if tmp_path is not None and tmp_path.exists():
             tmp_path.unlink(missing_ok=True)
-        raise DeploymentError("write file", path, f"atomic write failed: {exc}") from exc
+        raise DeploymentError(
+            "write file", path, f"atomic write failed: {exc}"
+        ) from exc
 
 
 def write_manifest(dest_dir: Path, entries: dict[str, dict[str, str]]) -> None:
@@ -140,11 +155,15 @@ def write_manifest(dest_dir: Path, entries: dict[str, dict[str, str]]) -> None:
         try:
             manifest_path.unlink(missing_ok=True)
         except OSError as exc:
-            raise DeploymentError("write manifest", manifest_path, f"cannot remove empty manifest: {exc}") from exc
+            raise DeploymentError(
+                "write manifest", manifest_path, f"cannot remove empty manifest: {exc}"
+            ) from exc
         return
     payload = {"version": MANIFEST_VERSION, "entries": entries}
     atomic_write_text(
-        manifest_path, json.dumps(payload, indent=2, sort_keys=True) + "\n", REG_FILE_MODE
+        manifest_path,
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        REG_FILE_MODE,
     )
 
 
@@ -156,7 +175,9 @@ def remove_path(target: Path) -> None:
         else:
             shutil.rmtree(target)
     except OSError as exc:
-        raise DeploymentError("remove target", target, f"failed to remove path: {exc}") from exc
+        raise DeploymentError(
+            "remove target", target, f"failed to remove path: {exc}"
+        ) from exc
 
 
 def is_repo_owned_symlink(target: Path, repo_root: Path) -> bool:
@@ -213,7 +234,9 @@ def copy_directory_atomic(source_dir: Path, target: Path) -> None:
             remove_path(target)
         os.replace(copied, target)
     except OSError as exc:
-        raise DeploymentError("copy directory", target, f"atomic directory copy failed: {exc}") from exc
+        raise DeploymentError(
+            "copy directory", target, f"atomic directory copy failed: {exc}"
+        ) from exc
     finally:
         if staging is not None and staging.exists():
             shutil.rmtree(staging, ignore_errors=True)

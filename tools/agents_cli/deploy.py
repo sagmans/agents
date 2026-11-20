@@ -74,7 +74,7 @@ class DeploySummary:
     unchanged: int = 0
     removed: int = 0
     dry_run: bool = False
-    planned_paths: list[str] = field(default_factory=list)
+    planned_paths: list[str] = field(default_factory=list[str])
 
 
 @dataclass(frozen=True)
@@ -114,7 +114,9 @@ def _plan_asset_group(
         try:
             content = asset.path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as exc:
-            raise DeploymentError("plan asset", asset.path, f"cannot read UTF-8 asset: {exc}") from exc
+            raise DeploymentError(
+                "plan asset", asset.path, f"cannot read UTF-8 asset: {exc}"
+            ) from exc
         planned.append(
             PlannedEntry(
                 dest_dir=validated,
@@ -147,7 +149,9 @@ def _plan_skills_and_roles(
     if "roles" in subpaths:
         dest_dir = validate_target_path(catalog.repo_root, home / subpaths["roles"])
         for role_id in sel.role_ids:
-            rendered = render_role_for_client(catalog.roles[role_id], client, sel.model_map)
+            rendered = render_role_for_client(
+                catalog.roles[role_id], client, sel.model_map
+            )
             entries.append(
                 PlannedEntry(
                     dest_dir=dest_dir,
@@ -166,7 +170,9 @@ def build_plan(catalog: Catalog, home: Path, sel: Selection) -> list[PlannedEntr
     for client in sel.clients:
         subpaths = CLIENT_SUBPATHS[client]
         entries.extend(_plan_skills_and_roles(catalog, client, home, sel))
-        asset_specs: tuple[tuple[str, dict[str, AssetFile], tuple[str, ...], str], ...] = (
+        asset_specs: tuple[
+            tuple[str, dict[str, AssetFile], tuple[str, ...], str], ...
+        ] = (
             ("prompts", catalog.prompts, sel.prompt_ids, ".md"),
             ("commands", catalog.opencode_commands, sel.command_ids, ".md"),
             ("themes", catalog.themes, sel.theme_ids, ".json"),
@@ -175,7 +181,11 @@ def build_plan(catalog: Catalog, home: Path, sel: Selection) -> list[PlannedEntr
             if key in subpaths:
                 entries.extend(
                     _plan_asset_group(
-                        catalog.repo_root, home / subpaths[key], source_map, selected_ids, suffix
+                        catalog.repo_root,
+                        home / subpaths[key],
+                        source_map,
+                        selected_ids,
+                        suffix,
                     )
                 )
         if client == "claude" and sel.include_styles:
@@ -239,7 +249,9 @@ def _is_entry_current(entry: PlannedEntry, target: Path) -> bool:
                 and target.resolve(strict=False) == entry.source_path.resolve()
             )
         if entry.kind == "dir_copy":
-            return entry.source_path is not None and is_dir_copy_current(entry.source_path, target)
+            return entry.source_path is not None and is_dir_copy_current(
+                entry.source_path, target
+            )
         if entry.kind == "file":
             return (
                 not target.is_symlink()
@@ -260,20 +272,28 @@ def _apply_one(entry: PlannedEntry) -> bool:
     try:
         entry.dest_dir.mkdir(parents=True, mode=DIR_MODE, exist_ok=True)
     except OSError as exc:
-        raise DeploymentError("create directory", entry.dest_dir, f"mkdir failed: {exc}") from exc
+        raise DeploymentError(
+            "create directory", entry.dest_dir, f"mkdir failed: {exc}"
+        ) from exc
     if entry.kind == "symlink":
         if entry.source_path is None:
-            raise DeploymentError("install entry", target, "missing source_path for symlink")
+            raise DeploymentError(
+                "install entry", target, "missing source_path for symlink"
+            )
         if target.exists() or target.is_symlink():
             remove_path(target)
         try:
             os.symlink(entry.source_path, target)
         except OSError as exc:
-            raise DeploymentError("create symlink", target, f"symlink failed: {exc}") from exc
+            raise DeploymentError(
+                "create symlink", target, f"symlink failed: {exc}"
+            ) from exc
         return True
     if entry.kind == "dir_copy":
         if entry.source_path is None:
-            raise DeploymentError("install entry", target, "missing source_path for dir_copy")
+            raise DeploymentError(
+                "install entry", target, "missing source_path for dir_copy"
+            )
         copy_directory_atomic(entry.source_path, target)
         return True
     if target.is_symlink() or target.is_dir():
@@ -343,7 +363,9 @@ def install_selection(catalog: Catalog, home: Path, sel: Selection) -> DeploySum
     """Validate preflight across all target directories, then atomically apply or preview."""
     entries = build_plan(catalog, home, sel)
     dest_dirs = _client_dest_dirs(catalog.repo_root, home, sel.clients)
-    manifests, conflicts = _preflight(home, dest_dirs, entries, catalog.repo_root, sync=sel.sync)
+    manifests, conflicts = _preflight(
+        home, dest_dirs, entries, catalog.repo_root, sync=sel.sync
+    )
     if conflicts:
         raise DestinationConflictError(
             "install preflight",
@@ -378,7 +400,10 @@ def uninstall_selection(
     """Remove only manifest-owned entries for `clients`, never user files."""
     summary = DeploySummary(dry_run=dry_run)
     for dest_dir in _client_dest_dirs(catalog.repo_root, home, clients):
-        if find_symlinked_subpath_component(home, dest_dir) is not None or not dest_dir.is_dir():
+        if (
+            find_symlinked_subpath_component(home, dest_dir) is not None
+            or not dest_dir.is_dir()
+        ):
             continue
         manifest = read_manifest(dest_dir)
         for name in sorted(list(manifest)):
@@ -430,7 +455,8 @@ def _client_status_for_dir(
         target = entry.dest_dir / entry.entry_name
         owned = manifests.get(entry.dest_dir, {})
         is_owned = entry.dest_dir not in symlinked_dirs and (
-            entry.entry_name in owned or is_repo_owned_symlink(target, catalog.repo_root)
+            entry.entry_name in owned
+            or is_repo_owned_symlink(target, catalog.repo_root)
         )
         if not target.exists() and not target.is_symlink():
             missing += 1
@@ -460,13 +486,19 @@ def _client_status_for_dir(
 
 def inspect_status(catalog: Catalog, home: Path, sel: Selection) -> list[ClientStatus]:
     """Compare desired client plans and manifests against disk without mutating files."""
-    return [_client_status_for_dir(client, catalog, home, sel) for client in sel.clients]
+    return [
+        _client_status_for_dir(client, catalog, home, sel) for client in sel.clients
+    ]
 
 
 def has_managed_claude_styles(repo_root: Path, home: Path) -> bool:
     """Detect whether Claude output styles or hooks are already managed on disk."""
     for key in ("styles", "hooks"):
-        dest_dir = validate_target_path(repo_root, home / CLIENT_SUBPATHS["claude"][key])
-        if find_symlinked_subpath_component(home, dest_dir) is None and read_manifest(dest_dir):
+        dest_dir = validate_target_path(
+            repo_root, home / CLIENT_SUBPATHS["claude"][key]
+        )
+        if find_symlinked_subpath_component(home, dest_dir) is None and read_manifest(
+            dest_dir
+        ):
             return True
     return False

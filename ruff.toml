@@ -1,0 +1,7 @@
+# Matches pyrightconfig.json pythonVersion ("3.11").
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+# Line length is governed by ruff format rather than E501 comments/strings.
+ignore = ["E501"]

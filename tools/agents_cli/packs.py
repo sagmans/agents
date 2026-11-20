@@ -42,7 +42,9 @@ def _validate_member_ids(
 ) -> tuple[str, ...]:
     """Ensure pack member lists reference real catalog IDs without cross-pack overlap."""
     if not isinstance(raw, list):
-        raise CatalogValidationError("validate packs", path, f"{field} must be a JSON list")
+        raise CatalogValidationError(
+            "validate packs", path, f"{field} must be a JSON list"
+        )
     members: list[str] = []
     for item in cast(list[object], raw):
         if (
@@ -51,11 +53,19 @@ def _validate_member_ids(
             or len(item) > MAX_ID_LENGTH
             or ID_PATTERN.fullmatch(item) is None
         ):
-            raise CatalogValidationError("validate packs", path, f"invalid ID {item!r} in {field}")
+            raise CatalogValidationError(
+                "validate packs", path, f"invalid ID {item!r} in {field}"
+            )
         if item not in available:
-            raise CatalogValidationError("validate packs", path, f"unknown {field[:-1]} ID {item!r}")
+            raise CatalogValidationError(
+                "validate packs", path, f"unknown {field[:-1]} ID {item!r}"
+            )
         if item in seen:
-            raise CatalogValidationError("validate packs", path, f"duplicate {field[:-1]} ID {item!r} across packs")
+            raise CatalogValidationError(
+                "validate packs",
+                path,
+                f"duplicate {field[:-1]} ID {item!r} across packs",
+            )
         seen.add(item)
         members.append(item)
     return tuple(members)
@@ -72,35 +82,55 @@ def _parse_single_pack(
     seen_members: dict[str, set[str]],
 ) -> CategoryPack:
     if not isinstance(raw_entry, dict):
-        raise CatalogValidationError("validate packs", path, "each pack entry must be a JSON object")
+        raise CatalogValidationError(
+            "validate packs", path, "each pack entry must be a JSON object"
+        )
     entry = cast(dict[str, Any], raw_entry)
     unknown = sorted(set(entry) - PACK_ENTRY_ALLOWED_FIELDS)
     if unknown:
-        raise CatalogValidationError("validate packs", path, f"disallowed pack key(s): {', '.join(unknown)}")
+        raise CatalogValidationError(
+            "validate packs", path, f"disallowed pack key(s): {', '.join(unknown)}"
+        )
     pack_id = entry.get("id")
     if not isinstance(pack_id, str) or pack_id not in VALID_CATEGORIES:
         raise CatalogValidationError(
-            "validate packs", path, f"pack id must be one of {list(VALID_CATEGORIES)}, got {pack_id!r}"
+            "validate packs",
+            path,
+            f"pack id must be one of {list(VALID_CATEGORIES)}, got {pack_id!r}",
         )
     if pack_id in seen_packs:
-        raise CatalogValidationError("validate packs", path, f"duplicate pack id {pack_id!r}")
+        raise CatalogValidationError(
+            "validate packs", path, f"duplicate pack id {pack_id!r}"
+        )
     seen_packs.add(pack_id)
 
     name, summary = entry.get("name"), entry.get("summary")
     if not isinstance(name, str) or not name.strip():
-        raise CatalogValidationError("validate packs", path, f"pack {pack_id!r} name must be non-empty")
+        raise CatalogValidationError(
+            "validate packs", path, f"pack {pack_id!r} name must be non-empty"
+        )
     if not isinstance(summary, str) or not summary.strip():
-        raise CatalogValidationError("validate packs", path, f"pack {pack_id!r} summary must be non-empty")
+        raise CatalogValidationError(
+            "validate packs", path, f"pack {pack_id!r} summary must be non-empty"
+        )
 
     return CategoryPack(
         pack_id=pack_id,
         name=name.strip(),
         summary=summary.strip(),
-        skill_ids=_validate_member_ids(entry.get("skills"), "skills", skills_map, seen_members["skills"], path),
+        skill_ids=_validate_member_ids(
+            entry.get("skills"), "skills", skills_map, seen_members["skills"], path
+        ),
         role_ids=role_ids_by_cat.get(pack_id, ()),
-        prompt_ids=_validate_member_ids(entry.get("prompts"), "prompts", prompts_map, seen_members["prompts"], path),
+        prompt_ids=_validate_member_ids(
+            entry.get("prompts"), "prompts", prompts_map, seen_members["prompts"], path
+        ),
         command_ids=_validate_member_ids(
-            entry.get("commands"), "commands", commands_map, seen_members["commands"], path
+            entry.get("commands"),
+            "commands",
+            commands_map,
+            seen_members["commands"],
+            path,
         ),
     )
 
@@ -116,7 +146,11 @@ def _verify_complete_partition(
     """Guarantee strict mode catches newly added assets omitted from `packs.json`."""
     missing_packs = [cat for cat in VALID_CATEGORIES if cat not in seen_packs]
     if missing_packs:
-        raise CatalogValidationError("validate packs", path, f"missing category pack(s): {', '.join(missing_packs)}")
+        raise CatalogValidationError(
+            "validate packs",
+            path,
+            f"missing category pack(s): {', '.join(missing_packs)}",
+        )
     checks: tuple[tuple[str, Mapping[str, object]], ...] = (
         ("skills", skills_map),
         ("prompts", prompts_map),
@@ -126,7 +160,9 @@ def _verify_complete_partition(
         unpacked = sorted(set(available) - seen_members[label])
         if unpacked:
             raise CatalogValidationError(
-                "validate packs", path, f"unassigned {label} missing from packs.json: {', '.join(unpacked)}"
+                "validate packs",
+                path,
+                f"unassigned {label} missing from packs.json: {', '.join(unpacked)}",
             )
 
 
@@ -143,16 +179,28 @@ def load_packs(
     packs_path = repo_root / PACKS_FILENAME
     if not packs_path.exists():
         if strict_nonempty:
-            raise CatalogValidationError("validate packs", packs_path, f"missing {PACKS_FILENAME}")
+            raise CatalogValidationError(
+                "validate packs", packs_path, f"missing {PACKS_FILENAME}"
+            )
         return {}
     if packs_path.is_symlink() or not packs_path.is_file():
-        raise CatalogValidationError("validate packs", packs_path, f"{PACKS_FILENAME} must be a regular file")
+        raise CatalogValidationError(
+            "validate packs", packs_path, f"{PACKS_FILENAME} must be a regular file"
+        )
 
     raw = read_json_object(
-        packs_path, "validate packs", lambda op, p, msg: CatalogValidationError(op, p, msg)
+        packs_path,
+        "validate packs",
+        lambda op, p, msg: CatalogValidationError(op, p, msg),
     )
-    if frozenset(raw) != _PACKS_ROOT_KEYS or not isinstance(raw.get("packs"), list) or not raw["packs"]:
-        raise CatalogValidationError("validate packs", packs_path, "expected non-empty top-level 'packs' list")
+    if (
+        frozenset(raw) != _PACKS_ROOT_KEYS
+        or not isinstance(raw.get("packs"), list)
+        or not raw["packs"]
+    ):
+        raise CatalogValidationError(
+            "validate packs", packs_path, "expected non-empty top-level 'packs' list"
+        )
 
     by_cat: dict[str, list[str]] = {cat: [] for cat in VALID_CATEGORIES}
     for role_id, cat in sorted(role_categories.items()):
@@ -160,7 +208,11 @@ def load_packs(
     role_ids_by_cat = {cat: tuple(ids) for cat, ids in by_cat.items()}
 
     seen_packs: set[str] = set()
-    seen_members: dict[str, set[str]] = {"skills": set(), "prompts": set(), "commands": set()}
+    seen_members: dict[str, set[str]] = {
+        "skills": set(),
+        "prompts": set(),
+        "commands": set(),
+    }
     packs: dict[str, CategoryPack] = {}
     for raw_entry in cast(list[object], raw["packs"]):
         pack = _parse_single_pack(
@@ -176,7 +228,9 @@ def load_packs(
         packs[pack.pack_id] = pack
 
     if strict_nonempty:
-        _verify_complete_partition(packs_path, seen_packs, seen_members, skills_map, prompts_map, commands_map)
+        _verify_complete_partition(
+            packs_path, seen_packs, seen_members, skills_map, prompts_map, commands_map
+        )
     return packs
 
 

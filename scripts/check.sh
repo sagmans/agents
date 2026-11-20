@@ -16,15 +16,19 @@ fi
 REPO_ROOT="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
 cd "$REPO_ROOT"
 
+# When invoked inside a temporary detached worktree (e.g. pre-push `at_sha`),
+# mise shims may reject the untrusted worktree's mise.toml under MISE_PARANOID=1.
+if command -v mise >/dev/null 2>&1 && ! mise -C "$REPO_ROOT" bin-paths >/dev/null 2>&1; then
+	export MISE_IGNORED_CONFIG_PATHS="${MISE_IGNORED_CONFIG_PATHS:+$MISE_IGNORED_CONFIG_PATHS:}$REPO_ROOT"
+fi
+
 # shellcheck source-path=SCRIPTDIR source=lib/checks.sh
 . "$REPO_ROOT/scripts/lib/checks.sh"
+append_global_mise_path
 
 REQUIRED_TOOLS=(
 	python3
 	git
-	shellcheck
-	shfmt
-	pyright
 	lizard
 	semgrep
 	markdownlint-cli2
@@ -37,6 +41,8 @@ for tool in "${REQUIRED_TOOLS[@]}"; do
 		exit 1
 	fi
 done
+
+ensure_pinned_tools "$MISE_CONFIG_REL" shellcheck shfmt ruff pyright
 
 echo "==> Personal leakage guard"
 ./scripts/personal-scan.sh
@@ -51,11 +57,7 @@ trap cleanup EXIT
 
 git ls-files -z --cached --others --exclude-standard >"$files_list"
 reset_classified_lists
-while IFS= read -r -d '' path; do
-	[ -L "$path" ] && continue
-	[ -f "$path" ] || continue
-	classify_repo_path "$path"
-done <"$files_list"
+classify_nul_paths "$REPO_ROOT" <"$files_list"
 
 echo "==> JSON syntax check"
 run_json_checks
@@ -72,7 +74,7 @@ if [ "${#CHECK_MD_FILES[@]}" -gt 0 ]; then
 	markdownlint-cli2 --no-globs "${md_args[@]}"
 fi
 
-echo "==> Python strict type check, complexity, and SAST"
+echo "==> Python format, lint, strict type check, complexity, and SAST"
 run_python_checks
 run_lizard_checks
 run_semgrep_checks "$REPO_ROOT/.githooks/lib/semgrep"

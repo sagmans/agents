@@ -33,7 +33,8 @@ Checks run in `.githooks/`. Never use `--no-verify` or bypass local hooks.
 
 Commit messages must follow `.githooks/GIT_CONVENTION.md` (Conventional Commits
 with a WHY-focused body and `Signed-off-by` DCO trailer, signed with GPG via
-`git commit -s -S`). Generic and repository hooks require `gitleaks`,
-`osv-scanner`, `semgrep`, `lizard`, `markdownlint-cli2`, `pyright`,
-`shellcheck`, and `shfmt` (plus `actionlint` and `zizmor` when workflows
-change). Any missing tool fails the hook.
+`git commit -s -S`). Tool versions for `pyright`, `ruff`, `shellcheck`, and
+`shfmt` are pinned in `mise.toml`. Generic and repository hooks require
+`gitleaks`, `osv-scanner`, `semgrep`, `lizard`, `markdownlint-cli2`, `pyright`,
+`ruff`, `shellcheck`, and `shfmt` (plus `actionlint` and `zizmor` when workflows
+change). Any missing tool or pin mismatch fails the hook.

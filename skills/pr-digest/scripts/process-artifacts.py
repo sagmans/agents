@@ -47,7 +47,9 @@ def object_map(value: Any) -> dict[str, Any]:
 
 
 def object_rows(value: Any) -> list[dict[str, Any]]:
-    return [cast(dict[str, Any], item) for item in as_list(value) if isinstance(item, dict)]
+    return [
+        cast(dict[str, Any], item) for item in as_list(value) if isinstance(item, dict)
+    ]
 
 
 def first_present(*values: Any) -> Any:
@@ -89,7 +91,10 @@ def thread_location(thread: dict[str, Any]) -> str:
 
 
 def normalize_checks(workdir: Path) -> list[dict[str, Any]]:
-    return [normalize_check(check) for check in object_rows(load_json(workdir / "checks.json", []))]
+    return [
+        normalize_check(check)
+        for check in object_rows(load_json(workdir / "checks.json", []))
+    ]
 
 
 def normalize_check(check: dict[str, Any]) -> dict[str, Any]:
@@ -107,7 +112,9 @@ def normalize_check(check: dict[str, Any]) -> dict[str, Any]:
 def normalize_comments(
     workdir: Path, thread_comment_urls: set[str], thread_comment_ids: set[str]
 ) -> dict[str, Any]:
-    issue_rows = normalize_issue_comments(load_json(workdir / "issue-comments.json", []))
+    issue_rows = normalize_issue_comments(
+        load_json(workdir / "issue-comments.json", [])
+    )
     review_rows = normalize_review_submissions(load_json(workdir / "reviews.json", []))
     inline_rows, duplicate_count = normalize_inline_comments(
         load_json(workdir / "review-comments.json", []),
@@ -146,7 +153,9 @@ def review_submission_row(review: dict[str, Any]) -> dict[str, Any]:
         "author": login_from_user(review.get("user")),
         "location": text_field(review, "html_url"),
         "digest": f"{state}: {body}".strip(),
-        "needed_action": "agent triage" if state not in {"COMMENTED", "APPROVED"} else "none",
+        "needed_action": "agent triage"
+        if state not in {"COMMENTED", "APPROVED"}
+        else "none",
     }
 
 

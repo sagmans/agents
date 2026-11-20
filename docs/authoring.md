@@ -40,8 +40,8 @@ Every role definition must include these 12 level-2 (`##`) Markdown headings:
    (`^[a-z0-9][a-z0-9_-]*$`, max 64 chars).
 2. Omit machine-specific provider bindings and secrets; use `--model-map` for
    model choices and `${ENV_VAR}` placeholders in `mcp/examples/`.
-3. Format shell scripts with `shfmt -w` and verify clean linting and strict
-   validation:
+3. Format shell scripts with `shfmt -w` and Python files with `ruff format`,
+   then verify clean linting and strict validation:
 
 ```sh
 ./setup validate --strict

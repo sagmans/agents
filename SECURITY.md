@@ -24,8 +24,9 @@ Before any commit or push leaves a clone, Git hooks enforce:
 
 1. **Secret scanning:** `gitleaks` scans staged blobs and commit ranges.
 2. **SAST and complexity:** `semgrep` and `lizard` inspect code changes.
-3. **Static checks and formatting:** `pyright`, `shellcheck`, `shfmt`, and
-   `markdownlint-cli2` validate scripts, types, and documentation.
+3. **Static checks and formatting:** `ruff`, `pyright`, `shellcheck`, `shfmt`,
+   and `markdownlint-cli2` validate scripts, formatting, types, and
+   documentation (pinned in `mise.toml`).
 4. **Dependency hygiene:** `osv-scanner` audits any tracked lockfiles.
 5. **Personal data guard:** `scripts/personal-scan.sh` blocks environment-specific
    paths, internal issue IDs, and private provider strings.

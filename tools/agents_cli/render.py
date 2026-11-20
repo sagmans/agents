@@ -9,7 +9,11 @@ from typing import Any, cast
 
 from .adapters import validate_pi_metadata
 from .catalog import RolePackage
-from .constants import DEFAULT_OPENCODE_DENY_RULE, MUTATING_ENGINEER_ROLES, SUPPORTED_CLIENTS
+from .constants import (
+    DEFAULT_OPENCODE_DENY_RULE,
+    MUTATING_ENGINEER_ROLES,
+    SUPPORTED_CLIENTS,
+)
 from .errors import CatalogValidationError, RenderError
 from .fs_ops import read_json_object
 
@@ -26,7 +30,14 @@ _YAML_ESCAPES: dict[int, str] = {
 }
 
 _MODEL_MAP_ALLOWED_KEYS: frozenset[str] = frozenset(
-    {"defaults", "roles", "client_metadata", "role_appendices", "$schema", "description"}
+    {
+        "defaults",
+        "roles",
+        "client_metadata",
+        "role_appendices",
+        "$schema",
+        "description",
+    }
 )
 
 _PI_ORDERED_KEYS: tuple[str, ...] = (
@@ -51,10 +62,12 @@ _PI_ORDERED_KEYS: tuple[str, ...] = (
 class ModelMap:
     """User-supplied role-to-model and local runtime bindings loaded via `--model-map`."""
 
-    defaults: dict[str, str] = field(default_factory=dict)
-    roles: dict[str, str] = field(default_factory=dict)
-    client_metadata: dict[str, dict[str, Any]] = field(default_factory=dict)
-    role_appendices: dict[str, str] = field(default_factory=dict)
+    defaults: dict[str, str] = field(default_factory=dict[str, str])
+    roles: dict[str, str] = field(default_factory=dict[str, str])
+    client_metadata: dict[str, dict[str, Any]] = field(
+        default_factory=dict[str, dict[str, Any]]
+    )
+    role_appendices: dict[str, str] = field(default_factory=dict[str, str])
     source: Path | None = None
 
     def resolve(self, client: str, role_id: str) -> str | None:
@@ -83,17 +96,28 @@ def _validate_model_map_section(
         raise RenderError("load model map", path, f"{section} must be a JSON object")
     out: dict[str, str] = {}
     for k, v in cast(dict[object, object], raw).items():
-        if not isinstance(k, str) or not k.strip() or not isinstance(v, str) or not v.strip():
+        if (
+            not isinstance(k, str)
+            or not k.strip()
+            or not isinstance(v, str)
+            or not v.strip()
+        ):
             raise RenderError(
-                "load model map", path, f"{section} keys and values must be non-empty strings"
+                "load model map",
+                path,
+                f"{section} keys and values must be non-empty strings",
             )
         clean_k = k.strip()
         if check_clients and clean_k not in SUPPORTED_CLIENTS:
-            raise RenderError("load model map", path, f"unknown client in {section}: {clean_k!r}")
+            raise RenderError(
+                "load model map", path, f"unknown client in {section}: {clean_k!r}"
+            )
         if allow_prefixed and ":" in clean_k:
             prefix, role_part = clean_k.split(":", 1)
             if prefix not in SUPPORTED_CLIENTS or not role_part.strip():
-                raise RenderError("load model map", path, f"invalid scoped role key: {clean_k!r}")
+                raise RenderError(
+                    "load model map", path, f"invalid scoped role key: {clean_k!r}"
+                )
         out[clean_k] = v.strip()
     return out
 
@@ -103,11 +127,19 @@ def _validate_client_metadata(raw: Any, path: Path) -> dict[str, dict[str, Any]]
     if raw is None:
         return {}
     if not isinstance(raw, dict):
-        raise RenderError("load model map", path, "client_metadata must be a JSON object")
+        raise RenderError(
+            "load model map", path, "client_metadata must be a JSON object"
+        )
     out: dict[str, dict[str, Any]] = {}
     for client, meta in cast(dict[object, object], raw).items():
-        if not isinstance(client, str) or client not in SUPPORTED_CLIENTS or not isinstance(meta, dict):
-            raise RenderError("load model map", path, f"invalid client_metadata entry for {client!r}")
+        if (
+            not isinstance(client, str)
+            or client not in SUPPORTED_CLIENTS
+            or not isinstance(meta, dict)
+        ):
+            raise RenderError(
+                "load model map", path, f"invalid client_metadata entry for {client!r}"
+            )
         typed_meta = {str(mk): mv for mk, mv in cast(dict[object, Any], meta).items()}
         if client == "pi":
             try:
@@ -115,7 +147,11 @@ def _validate_client_metadata(raw: Any, path: Path) -> dict[str, dict[str, Any]]
             except CatalogValidationError as exc:
                 raise RenderError("load model map", path, exc.reason) from exc
         elif typed_meta:
-            raise RenderError("load model map", path, f"client_metadata is only supported for pi, got {client!r}")
+            raise RenderError(
+                "load model map",
+                path,
+                f"client_metadata is only supported for pi, got {client!r}",
+            )
         out[client] = typed_meta
     return out
 
@@ -128,7 +164,9 @@ def _validate_role_appendices(raw: Any, path: Path) -> dict[str, str]:
     for key, body in parsed.items():
         if body.lstrip().startswith("---"):
             raise RenderError(
-                "load model map", path, f"role_appendices[{key!r}] must not start with YAML frontmatter"
+                "load model map",
+                path,
+                f"role_appendices[{key!r}] must not start with YAML frontmatter",
             )
     return parsed
 
@@ -146,17 +184,31 @@ def load_model_map(path: Path | None) -> ModelMap:
     unknown = sorted(set(data) - _MODEL_MAP_ALLOWED_KEYS)
     if unknown:
         raise RenderError(
-            "load model map", expanded, f"unsupported top-level key(s): {', '.join(unknown)}"
+            "load model map",
+            expanded,
+            f"unsupported top-level key(s): {', '.join(unknown)}",
         )
     return ModelMap(
         defaults=_validate_model_map_section(
-            data.get("defaults"), "defaults", expanded, check_clients=True, allow_prefixed=False
+            data.get("defaults"),
+            "defaults",
+            expanded,
+            check_clients=True,
+            allow_prefixed=False,
         ),
         roles=_validate_model_map_section(
-            data.get("roles"), "roles", expanded, check_clients=False, allow_prefixed=True
+            data.get("roles"),
+            "roles",
+            expanded,
+            check_clients=False,
+            allow_prefixed=True,
         ),
-        client_metadata=_validate_client_metadata(data.get("client_metadata"), expanded),
-        role_appendices=_validate_role_appendices(data.get("role_appendices"), expanded),
+        client_metadata=_validate_client_metadata(
+            data.get("client_metadata"), expanded
+        ),
+        role_appendices=_validate_role_appendices(
+            data.get("role_appendices"), expanded
+        ),
         source=expanded,
     )
 
@@ -182,7 +234,9 @@ def _format_scalar(value: Any) -> str:
         return str(value)
     if isinstance(value, str):
         return _yaml_quote(value)
-    raise RenderError("render role", None, f"unsupported scalar metadata type: {type(value).__name__}")
+    raise RenderError(
+        "render role", None, f"unsupported scalar metadata type: {type(value).__name__}"
+    )
 
 
 def _format_yaml_value(value: Any) -> str:
@@ -237,11 +291,16 @@ def _render_pi(role: RolePackage, model: str | None, overlay: ModelMap | None) -
     ]
     if model is not None:
         pairs.append(("model", model))
-    body = _compose_body(role.definition_body, overlay.resolve_appendix("pi", role.role_id) if overlay else None)
+    body = _compose_body(
+        role.definition_body,
+        overlay.resolve_appendix("pi", role.role_id) if overlay else None,
+    )
     return _render_from_ordered_meta(pairs, merged_meta, _PI_ORDERED_KEYS, body)
 
 
-def _render_opencode(role: RolePackage, model: str | None, overlay: ModelMap | None) -> str:
+def _render_opencode(
+    role: RolePackage, model: str | None, overlay: ModelMap | None
+) -> str:
     meta = role.opencode_metadata
     pairs: list[tuple[str, Any]] = [
         ("description", role.summary),
@@ -258,19 +317,26 @@ def _render_opencode(role: RolePackage, model: str | None, overlay: ModelMap | N
         # OpenCode V2 requires compact `permissions` rule arrays rather than V1 `permission` maps.
         raw_lines.append(("permissions", json.dumps(raw_perms, separators=(",", ":"))))
     body = _compose_body(
-        role.definition_body, overlay.resolve_appendix("opencode", role.role_id) if overlay else None
+        role.definition_body,
+        overlay.resolve_appendix("opencode", role.role_id) if overlay else None,
     )
     return _render_from_ordered_meta(
         pairs, meta, ("tools", "temperature", "max_steps"), body, raw_lines=raw_lines
     )
 
 
-def _render_generic(role: RolePackage, client: str, model: str | None, overlay: ModelMap | None) -> str:
-    pairs: list[tuple[str, Any]] = [("name", role.role_id), ("description", role.summary)]
+def _render_generic(
+    role: RolePackage, client: str, model: str | None, overlay: ModelMap | None
+) -> str:
+    pairs: list[tuple[str, Any]] = [
+        ("name", role.role_id),
+        ("description", role.summary),
+    ]
     if model is not None:
         pairs.append(("model", model))
     body = _compose_body(
-        role.definition_body, overlay.resolve_appendix(client, role.role_id) if overlay else None
+        role.definition_body,
+        overlay.resolve_appendix(client, role.role_id) if overlay else None,
     )
     return _render_from_ordered_meta(pairs, {}, (), body)
 

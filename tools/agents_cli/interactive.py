@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from .catalog import Catalog
 from .constants import SUPPORTED_CLIENTS
@@ -64,7 +64,10 @@ def _parse_index_or_names(
         else:
             invalid.append(item)
     if invalid:
-        print(f"warning: ignored unrecognized choice(s): {', '.join(invalid)}", file=sys.stderr)
+        print(
+            f"warning: ignored unrecognized choice(s): {', '.join(invalid)}",
+            file=sys.stderr,
+        )
     return tuple(chosen)
 
 
@@ -72,7 +75,9 @@ def _select_clients(input_fn: InputFn) -> tuple[str, ...]:
     print("\nAvailable clients:")
     for idx, client in enumerate(SUPPORTED_CLIENTS, 1):
         print(f"  {idx}. {client}")
-    raw = _prompt_line("Select clients (comma numbers/names or 'all') [all]: ", input_fn, "all")
+    raw = _prompt_line(
+        "Select clients (comma numbers/names or 'all') [all]: ", input_fn, "all"
+    )
     picked = _parse_index_or_names(raw, SUPPORTED_CLIENTS)
     if not picked:
         raise RenderError("interactive setup", None, "no valid client selected")
@@ -106,7 +111,9 @@ def _select_packs_or_custom(
                 f"{len(p.prompt_ids)} prompts, {len(p.command_ids)} commands) - {p.summary}"
             )
         raw = _prompt_line(
-            "Select packs ('all', 'custom', or comma numbers/names) [all]: ", input_fn, "all"
+            "Select packs ('all', 'custom', or comma numbers/names) [all]: ",
+            input_fn,
+            "all",
         )
         if raw.strip().lower() != _CUSTOM_TOKEN:
             picked = _parse_index_or_names(raw, pack_ids)
@@ -122,9 +129,15 @@ def _select_packs_or_custom(
 
     skill_ids = _select_subset("skills", tuple(sorted(catalog.skills)), input_fn)
     role_ids = _select_subset("roles", tuple(sorted(catalog.roles)), input_fn)
-    prompt_ids = _select_subset("Pi prompts", tuple(sorted(catalog.prompts)), input_fn) if "pi" in clients else ()
+    prompt_ids = (
+        _select_subset("Pi prompts", tuple(sorted(catalog.prompts)), input_fn)
+        if "pi" in clients
+        else ()
+    )
     command_ids = (
-        _select_subset("OpenCode commands", tuple(sorted(catalog.opencode_commands)), input_fn)
+        _select_subset(
+            "OpenCode commands", tuple(sorted(catalog.opencode_commands)), input_fn
+        )
         if "opencode" in clients
         else ()
     )
@@ -172,14 +185,22 @@ def _run_wizard_prompts(
         f"{len(catalog.themes)} themes, {len(catalog.claude_styles)} styles"
     )
     clients = _select_clients(input_fn)
-    skill_ids, role_ids, prompt_ids, command_ids = _select_packs_or_custom(catalog, clients, input_fn)
-    theme_ids = _select_subset("Pi themes", tuple(sorted(catalog.themes)), input_fn) if "pi" in clients else ()
+    skill_ids, role_ids, prompt_ids, command_ids = _select_packs_or_custom(
+        catalog, clients, input_fn
+    )
+    theme_ids = (
+        _select_subset("Pi themes", tuple(sorted(catalog.themes)), input_fn)
+        if "pi" in clients
+        else ()
+    )
     include_styles = (
         _prompt_yes_no("Install Claude output styles & hooks?", input_fn, default=False)
         if "claude" in clients
         else False
     )
-    copy_skills = _prompt_yes_no("Copy skill directories instead of symlinking?", input_fn, default=default_copy)
+    copy_skills = _prompt_yes_no(
+        "Copy skill directories instead of symlinking?", input_fn, default=default_copy
+    )
     default_mm_str = str(default_model_map) if default_model_map else ""
     model_map_raw = _prompt_line(
         f"Optional --model-map JSON path [{default_mm_str or 'none'}]: ",
@@ -191,13 +212,17 @@ def _run_wizard_prompts(
         if model_map_raw and model_map_raw != "none"
         else load_model_map(None)
     )
-    dry_run = _prompt_yes_no("Preview changes with --dry-run first?", input_fn, default=default_dry_run)
+    dry_run = _prompt_yes_no(
+        "Preview changes with --dry-run first?", input_fn, default=default_dry_run
+    )
 
     print("\nSummary:")
     print(f"  clients  : {', '.join(clients)}")
     print(f"  skills   : {len(skill_ids)} ({'copy' if copy_skills else 'symlink'})")
     print(f"  roles    : {len(role_ids)}")
-    print(f"  extras   : prompts={len(prompt_ids)} commands={len(command_ids)} themes={len(theme_ids)} styles={include_styles}")
+    print(
+        f"  extras   : prompts={len(prompt_ids)} commands={len(command_ids)} themes={len(theme_ids)} styles={include_styles}"
+    )
     if not _prompt_yes_no("Proceed?", input_fn, default=True):
         print("Aborted without changes.")
         return None
