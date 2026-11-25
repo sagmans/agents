@@ -160,8 +160,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ren = sub.add_parser("render", help="Print rendered client Markdown for one role")
     p_ren.add_argument("role_id", help="Role ID to render")
     p_ren.add_argument("--client", required=True, choices=SUPPORTED_CLIENTS)
-    add_config_flags(p_ren, suppress_defaults=False)
-    p_ren.add_argument("--home", type=Path, default=Path.home())
+    # Root flags given before `render` must survive, as for every other subcommand.
+    add_config_flags(p_ren, suppress_defaults=True)
+    p_ren.add_argument("--home", type=Path, default=argparse.SUPPRESS)
 
     add_models_parser(sub)
 

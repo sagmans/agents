@@ -195,11 +195,13 @@ class LocalConfig:
         return self.with_choice(client, scope, key, merged)
 
     def merged_with(self, other: LocalConfig) -> LocalConfig:
-        """Overlay `other` field by field; its fields win where both set one."""
+        """Overlay `other` field by field, metadata key by key; its values win on conflicts."""
+        metadata = {c: dict(m) for c, m in self.client_metadata.items()}
+        for client, meta in other.client_metadata.items():
+            metadata[client] = {**metadata.get(client, {}), **meta}
+            _validate_client_metadata(metadata[client], self.source)
         result = LocalConfig(
-            models=self.models,
-            client_metadata={**self.client_metadata, **other.client_metadata},
-            source=self.source,
+            models=self.models, client_metadata=metadata, source=self.source
         )
         for client, block in other.models.items():
             for scope, key, choice in block.entries():
@@ -351,12 +353,16 @@ def _parse_client_metadata(raw: Any, path: Path) -> dict[str, dict[str, Any]]:
                 f"got {client!r}",
             )
         typed = {str(k): v for k, v in cast(dict[str, Any], meta).items()}
-        try:
-            validate_pi_metadata(typed, path)
-        except CatalogValidationError as exc:
-            raise ConfigError("load local config", path, exc.reason) from exc
+        _validate_client_metadata(typed, path)
         out[client] = typed
     return out
+
+
+def _validate_client_metadata(meta: dict[str, Any], path: Path | None) -> None:
+    try:
+        validate_pi_metadata(meta, path or Path())
+    except CatalogValidationError as exc:
+        raise ConfigError("load local config", path, exc.reason) from exc
 
 
 def parse_config_data(data: dict[str, Any], path: Path) -> LocalConfig:

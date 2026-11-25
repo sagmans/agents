@@ -44,7 +44,8 @@ def add_models_parser(sub: Any) -> None:
         "models",
         help="Show or change user-local model choices (never stored in this repository)",
     )
-    _add_common(p, suppress=False)
+    # Root flags given before `models` must survive, as for every other subcommand.
+    _add_common(p)
     actions = p.add_subparsers(dest="models_action")
     _add_common(
         actions.add_parser("show", help="Print the config path and every stored choice")
@@ -73,13 +74,13 @@ def add_models_parser(sub: Any) -> None:
     _add_common(actions.add_parser("edit", help="Change choices interactively"))
 
 
-def _add_common(parser: argparse.ArgumentParser, *, suppress: bool = True) -> None:
+def _add_common(parser: argparse.ArgumentParser) -> None:
     """Accept `--home` and `--config` before or after the action word."""
-    add_config_flag(parser, suppress_default=suppress)
+    add_config_flag(parser, suppress_default=True)
     parser.add_argument(
         "--home",
         type=Path,
-        default=argparse.SUPPRESS if suppress else Path.home(),
+        default=argparse.SUPPRESS,
         help="Home whose config is used (default: your home)",
     )
 
@@ -106,7 +107,8 @@ def _print_config(config: LocalConfig, path: Path, catalog: Catalog) -> None:
             parts += [f"thinking={choice.thinking}"] if choice.thinking else []
             if target_problem(catalog, client, scope, key) is not None:
                 parts.append(_STALE_MARK)
-            print(f"  {scope.label:<11} {key:<44} {' '.join(parts)}")
+            shown = "" if scope is Scope.ALL else key
+            print(f"  {scope.label:<11} {shown:<44} {' '.join(parts)}")
     if config.client_metadata:
         print(f"client_metadata: {', '.join(sorted(config.client_metadata))}")
 
@@ -122,7 +124,7 @@ def _require_target(
 def run_models_command(
     args: argparse.Namespace, catalog: Catalog, input_fn: InputFn = input
 ) -> int:
-    """Apply one models action; only `clear` may leave entries the catalog cannot apply."""
+    """Apply one models action; writes are checked, and entries already stored are kept."""
     path = config_path_from_args(args)
     config = load_config_for_edit(args, catalog)
     action = getattr(args, "models_action", None) or "show"
@@ -139,6 +141,13 @@ def run_models_command(
         )
     elif action == "clear":
         scope, key = _scope_of(args)
+        block = config.models.get(args.client)
+        if block is None or block.get(scope, key or ALL_KEY) is None:
+            raise ConfigError(
+                "models clear",
+                path,
+                f"nothing stored for {args.client} {scope.label} {key or ''}".rstrip(),
+            )
         updated = config.with_choice(args.client, scope, key, None)
     elif action == "import":
         incoming = read_config_file(args.file.expanduser())
@@ -155,6 +164,9 @@ def run_models_command(
             updated = edit_models_interactively(config, catalog, input_fn)
         except (EOFError, KeyboardInterrupt, ModelsWizardCancelled):
             print("\nAborted without changes.")
+            return 0
+        if updated == config:
+            print("no changes")
             return 0
     save_local_config(updated, path, catalog.repo_root)
     print(f"saved {updated.entry_count()} model choice(s) to {path}")

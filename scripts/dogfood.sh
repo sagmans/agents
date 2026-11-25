@@ -279,6 +279,28 @@ fi
 if ./setup render codebase-explorer --client opencode --config "$TMP_DIR/missing.json" >/dev/null 2>&1; then
 	fail "missing --config file unexpectedly accepted"
 fi
+if ./setup --config "$TMP_DIR/missing.json" render codebase-explorer --client opencode >/dev/null 2>&1; then
+	fail "missing --config before render unexpectedly accepted"
+fi
+# Root flags before the subcommand must reach it: a sandbox --home never touches the real config.
+h_root="$TMP_DIR/h-root"
+./setup --home "$h_root" models set --client claude --model "$TEST_MODEL" >/dev/null
+assert_file "$h_root/.config/agents/config.json"
+./setup --home "$h_root" render ci-watcher --client claude | grep -Fq "model: \"$TEST_MODEL\"" ||
+	fail "--home before render ignored"
+if ./setup models clear --client claude --role ci-watcher --home "$h_root" >/dev/null 2>&1; then
+	fail "clear of a scope with nothing stored reported success"
+fi
+# Import merges client metadata key by key, like model fields.
+meta_a="$TMP_DIR/meta-a.json"
+meta_b="$TMP_DIR/meta-b.json"
+printf '{"client_metadata":{"pi":{"extensions":true,"exclude_extensions":["ext-a"]}}}' >"$meta_a"
+printf '{"client_metadata":{"pi":{"exclude_extensions":["ext-b"]}}}' >"$meta_b"
+./setup models import "$meta_a" --home "$h_root" >/dev/null
+./setup models import "$meta_b" --home "$h_root" >/dev/null
+rendered_meta="$(./setup render ci-watcher --client pi --home "$h_root")"
+printf '%s\n' "$rendered_meta" | grep -Fq 'extensions: true' || fail "metadata import dropped a key"
+printf '%s\n' "$rendered_meta" | grep -Fq 'exclude_extensions: ["ext-b"]' || fail "metadata import did not update a key"
 # A stored choice for a role the catalog dropped blocks renders, but `models` can still show and
 # clear it, so the file never needs a hand edit.
 stale_config="$XDG_CONFIG_HOME/agents/config.json"

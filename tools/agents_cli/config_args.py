@@ -18,13 +18,17 @@ from .local_config import (
     load_local_config,
 )
 
+CONFIG_FLAG_HELP = (
+    "User-local model config (default: $XDG_CONFIG_HOME/agents/config.json)"
+)
+
 
 def add_config_flag(parser: argparse.ArgumentParser, *, suppress_default: bool) -> None:
     """`--config` alone, for `models`, which always edits a file and so cannot ignore one."""
     parser.add_argument(
         "--config",
         type=Path,
-        help="User-local model config (default: $XDG_CONFIG_HOME/agents/config.json)",
+        help=CONFIG_FLAG_HELP,
         default=argparse.SUPPRESS if suppress_default else None,
     )
 
@@ -37,7 +41,7 @@ def add_config_flags(
     group.add_argument(
         "--config",
         type=Path,
-        help="User-local model config (default: $XDG_CONFIG_HOME/agents/config.json)",
+        help=CONFIG_FLAG_HELP,
         default=argparse.SUPPRESS if suppress_defaults else None,
     )
     group.add_argument(
