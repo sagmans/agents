@@ -19,9 +19,9 @@ flowchart LR
 
 | Category | Count | Path | Notes |
 | --- | --- | --- | --- |
-| Packs | 7 | `packs.json` | `delivery`, `review`, `architecture`, `implementation`, `qa-testing`, `ops-security`, `research` |
+| Packs | 8 | `packs.json` | `core`, `delivery`, `review`, `architecture`, `implementation`, `qa-testing`, `operations`, `research` |
 | Skills | 12 | `skills/` | Git, commit, PR triage/merge, diff guide, report card, AGENTS.md |
-| Roles | 58 | `roles/<category>/` | 43 read-only review/analysis roles + 15 mutating engineering roles |
+| Roles | 50 | `roles/<category>/` | 36 read-only review/analysis roles + 14 mutating engineering roles |
 | Pi Prompts | 4 | `prompts/` | Deep code review, security audit, test review, decomposition |
 | OpenCode Commands | 8 | `adapters/opencode/commands/` | Slash-command workflows for commit, issue, PR, handoff, release |
 | Pi Theme | 1 | `themes/` | `violet-orbit.json` |
@@ -32,13 +32,14 @@ flowchart LR
 
 | Pack | Skills | Roles | Prompts | Commands | Focus |
 | --- | --- | --- | --- | --- | --- |
+| `core` | 0 | 2 | 0 | 0 | General-purpose fallback and read-only codebase exploration |
 | `delivery` | 8 | 0 | 0 | 5 | Commit, branch, review-triage, tag, and ship changes |
-| `review` | 4 | 12 | 4 | 2 | Code quality, architecture, security review, and handoff reports |
-| `architecture` | 0 | 10 | 0 | 1 | System boundaries, domain modeling, interface design, and migration plans |
-| `implementation` | 0 | 7 | 0 | 0 | Mutating feature delivery, bug fixes, refactors, performance, and build/docs |
-| `qa-testing` | 0 | 14 | 0 | 0 | Automated test engineering plus browser, mobile, TUI, usability, and l10n QA |
-| `ops-security` | 0 | 10 | 0 | 0 | CI failure triage, incident RCA, observability, release readiness, and deps |
-| `research` | 0 | 5 | 0 | 0 | Codebase exploration, library docs, and external web research |
+| `review` | 4 | 9 | 4 | 2 | Report-only correctness, security, maintainability, architecture, test, doc, comment, compatibility, and observability reviews |
+| `architecture` | 0 | 9 | 0 | 1 | Requirements, boundaries, interfaces, data models, threat models, and change and migration plans |
+| `implementation` | 0 | 9 | 0 | 0 | Mutating features, fixes, refactors, performance, build, docs, observability, and static analysis |
+| `qa-testing` | 0 | 13 | 0 | 0 | Test strategy and engineering, prompt evals, and browser, terminal, mobile, desktop, a11y, usability, and l10n QA |
+| `operations` | 0 | 6 | 0 | 0 | CI watching and triage, release readiness, incident RCA, dependency risk, and Cloudflare inspection |
+| `research` | 0 | 2 | 0 | 0 | Current web research and version-scoped library documentation |
 
 ## Quick Start
 

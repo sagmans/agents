@@ -1,0 +1,6 @@
+{
+  "id": "prompt-eval-engineer",
+  "category": "qa-testing",
+  "name": "Prompt Eval Engineer",
+  "summary": "Use to prove a change to agent instructions, prompts, skills, or role definitions with a control-vs-treatment eval and counted results. Edits eval files only, outside the repository by default."
+}
