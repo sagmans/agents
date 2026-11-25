@@ -186,15 +186,17 @@ h_pack="$TMP_DIR/h_pack"
 assert_symlink "$h_pack/.config/opencode/skills/commit"
 [ ! -e "$h_pack/.config/opencode/skills/report-card" ] || fail "unselected review skill installed by delivery/architecture packs"
 assert_file "$h_pack/.config/opencode/agents/architecture-designer.md"
+assert_file "$h_pack/.config/opencode/agents/codebase-explorer.md"
 [ ! -e "$h_pack/.config/opencode/agents/security-reviewer.md" ] || fail "unselected review role installed by delivery/architecture packs"
 assert_file "$h_pack/.config/opencode/commands/criticalthink.md"
 pack_status="$(./setup status --client opencode --pack delivery --pack architecture --home "$h_pack")"
-printf '%s\n' "$pack_status" | grep -Fq 'opencode: installed=23 stale=0 missing=0 unmanaged=0' ||
+printf '%s\n' "$pack_status" | grep -Fq 'opencode: installed=25 stale=0 missing=0 unmanaged=0' ||
 	fail "unexpected pack status: $pack_status"
 
 h_wiz="$TMP_DIR/h_wiz"
 printf 'codex\nresearch\nn\n\nn\ny\n' | ./setup --interactive --home "$h_wiz" >/dev/null
 assert_file "$h_wiz/.codex/agents/web-researcher.md"
+assert_file "$h_wiz/.codex/agents/codebase-explorer.md"
 [ ! -e "$h_wiz/.codex/skills/commit" ] || fail "research pack unexpectedly installed delivery skill"
 
 if bad_pack_err="$(./setup --pack no-such-pack --home "$h_wiz" 2>&1)"; then

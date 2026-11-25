@@ -32,7 +32,7 @@ flowchart LR
 
 | Pack | Skills | Roles | Prompts | Commands | Focus |
 | --- | --- | --- | --- | --- | --- |
-| `core` | 0 | 2 | 0 | 0 | General-purpose fallback and read-only codebase exploration |
+| `core` | 0 | 2 | 0 | 0 | General-purpose fallback and read-only codebase exploration; added to every pack install |
 | `delivery` | 8 | 0 | 0 | 5 | Commit, branch, review-triage, tag, and ship changes |
 | `review` | 4 | 9 | 4 | 2 | Report-only correctness, security, maintainability, architecture, test, doc, comment, compatibility, and observability reviews |
 | `architecture` | 0 | 9 | 0 | 1 | Requirements, boundaries, interfaces, data models, threat models, and change and migration plans |

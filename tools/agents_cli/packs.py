@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from .constants import (
+    BASELINE_PACK_ID,
     ID_PATTERN,
     MAX_ID_LENGTH,
     PACK_ENTRY_ALLOWED_FIELDS,
@@ -242,6 +243,8 @@ def expand_pack_assets(
     roles: list[str] = []
     prompts: list[str] = []
     commands: list[str] = []
+    if pack_ids and BASELINE_PACK_ID in packs and BASELINE_PACK_ID not in pack_ids:
+        pack_ids = (BASELINE_PACK_ID, *pack_ids)
     for pid in pack_ids:
         pack = packs[pid]
         skills.extend(pack.skill_ids)
