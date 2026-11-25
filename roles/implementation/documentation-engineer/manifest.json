@@ -2,5 +2,5 @@
   "id": "documentation-engineer",
   "category": "implementation",
   "name": "Documentation Engineer",
-  "summary": "Use to write or update user or developer docs verified against current source and safe command runs. Edits documentation files only."
+  "summary": "Use to write or update READMEs, guides, runbooks, or agent-facing text (instructions, prompts, skills, roles) verified against current source. Edits files."
 }

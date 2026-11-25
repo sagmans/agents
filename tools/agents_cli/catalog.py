@@ -16,8 +16,15 @@ from .constants import (
     ID_PATTERN,
     MAX_ID_LENGTH,
     MAX_ROLE_DEFINITION_LINES,
+    MAX_ROLE_SUMMARY_CHARS,
+    MAX_ROLE_WORKFLOW_STEPS,
+    MIN_ROLE_WORKFLOW_STEPS,
+    MUTATING_ENGINEER_ROLES,
+    MUTATING_GUARDRAIL,
+    REPORT_ONLY_GUARDRAIL,
     REQUIRED_ROLE_SECTIONS,
     ROLE_MANIFEST_ALLOWED_FIELDS,
+    ROLE_SUMMARY_PREFIXES,
     VALID_CATEGORIES,
 )
 from .errors import CatalogValidationError
@@ -193,22 +200,45 @@ def _validate_skill_dir(skill_dir: Path, repo_root: Path) -> SkillPackage:
     return SkillPackage(skill_id=skill_id, description=description, path=skill_dir)
 
 
-def _validate_role_definition(definition_path: Path) -> str:
+def _role_sections(text: str) -> list[tuple[str, str]]:
+    """Split a definition into (heading, body) pairs, ignoring headings inside fenced templates."""
+    unfenced = re.sub(r"^```.*?^```[ \t]*$", "", text, flags=re.MULTILINE | re.DOTALL)
+    parts = re.split(r"^##[ \t]+(.+?)[ \t]*$", unfenced, flags=re.MULTILINE)
+    return [(parts[i].strip(), parts[i + 1]) for i in range(1, len(parts) - 1, 2)]
+
+
+def _validate_role_definition(definition_path: Path, role_id: str) -> str:
     if not definition_path.is_file():
         raise CatalogValidationError(
             "validate role", definition_path, "missing DEFINITION.md"
         )
     text = _read_utf8_text(definition_path, "validate role")
-    headings = {
-        m.group(1).strip()
-        for m in re.finditer(r"^##\s+(.+?)\s*$", text, flags=re.MULTILINE)
-    }
-    missing = [sec for sec in REQUIRED_ROLE_SECTIONS if sec not in headings]
-    if missing:
+    sections = _role_sections(text)
+    headings = tuple(name for name, _ in sections)
+    if headings != REQUIRED_ROLE_SECTIONS:
         raise CatalogValidationError(
             "validate role",
             definition_path,
-            f"missing required sections: {', '.join(missing)}",
+            f"sections must be exactly {', '.join(REQUIRED_ROLE_SECTIONS)} in order; found {', '.join(headings) or 'none'}",
+        )
+    bodies = dict(sections)
+    steps = len(re.findall(r"^\d+\.\s", bodies["Workflow"], flags=re.MULTILINE))
+    if not MIN_ROLE_WORKFLOW_STEPS <= steps <= MAX_ROLE_WORKFLOW_STEPS:
+        raise CatalogValidationError(
+            "validate role",
+            definition_path,
+            f"Workflow has {steps} steps; expected {MIN_ROLE_WORKFLOW_STEPS}-{MAX_ROLE_WORKFLOW_STEPS}",
+        )
+    guardrail = (
+        MUTATING_GUARDRAIL
+        if role_id in MUTATING_ENGINEER_ROLES
+        else REPORT_ONLY_GUARDRAIL
+    )
+    if guardrail not in bodies["Rules"].splitlines():
+        raise CatalogValidationError(
+            "validate role",
+            definition_path,
+            f"Rules must contain the stance line verbatim: {guardrail}",
         )
     line_count = len(text.strip().splitlines())
     if line_count > MAX_ROLE_DEFINITION_LINES:
@@ -258,7 +288,16 @@ def _load_role_dir(
         raise CatalogValidationError(
             "validate role", manifest_path, "manifest summary must be non-empty"
         )
-    body = _validate_role_definition(definition_path)
+    if (
+        not summary.startswith(ROLE_SUMMARY_PREFIXES)
+        or len(summary) > MAX_ROLE_SUMMARY_CHARS
+    ):
+        raise CatalogValidationError(
+            "validate role",
+            manifest_path,
+            f"summary must start with one of {ROLE_SUMMARY_PREFIXES} and be at most {MAX_ROLE_SUMMARY_CHARS} characters",
+        )
+    body = _validate_role_definition(definition_path, role_id)
 
     pi_meta: dict[str, Any] = {}
     pi_path = repo_root / "adapters" / "pi" / "roles" / role_id / "metadata.json"

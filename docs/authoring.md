@@ -24,20 +24,27 @@ Keep both short and make each role's boundary obvious next to its siblings.
 
 - **One job per role.** Add a role only when its tools, permissions, output, or
   trigger differ from every existing role. Otherwise extend the nearest role.
-- **`summary` is the trigger.** Start with "Use to" or "Use when", name the
-  situation, and say whether the role is read-only. Keep it under 220 characters.
-- **Body at most 90 lines** (`./setup validate --strict` enforces it).
-  Workflow steps are heuristics, not scripts; state the reason for a rule
-  instead of shouting it.
+- **`summary` is the trigger.** Start with "Use to", "Use when", "Use before",
+  "Use after", "Use for", "Use only", or "Use as", name the situation, and say
+  whether the role is read-only. Keep it at most 220 characters.
+- **Body at most 90 lines.** Workflow steps are heuristics, not scripts; state
+  the reason for a rule instead of shouting it.
 - **Name siblings in `Scope`.** Every "Out" item points to the role that owns it.
-- **Mutation stance matches the category.** Only roles listed in
-  `MUTATING_ENGINEER_ROLES` edit files; every other role is report-only and its
-  OpenCode adapter denies edits.
+- **Mutation stance comes from `MUTATING_ENGINEER_ROLES`.** Only listed roles
+  edit files; every other role is report-only and its OpenCode adapter denies
+  edits. `Rules` carries the matching stance line verbatim
+  (`REPORT_ONLY_GUARDRAIL` or `MUTATING_GUARDRAIL` in
+  `tools/agents_cli/constants.py`), so every role states the same guardrail.
+
+Catalog loading enforces the summary form, the line cap, the section order,
+the Workflow step count, and the stance line on every command, not only
+`validate --strict`.
 
 ## Required `DEFINITION.md` Sections
 
-Every role definition starts with an H1 title and includes these 7 level-2
-(`##`) headings:
+Every role definition starts with an H1 title and has exactly these 7
+level-2 (`##`) headings, in this order. Headings inside fenced `Output`
+templates do not count:
 
 | Section | Holds |
 | --- | --- |
