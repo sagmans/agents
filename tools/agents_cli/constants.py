@@ -52,10 +52,11 @@ LOCAL_CONFIG_FILE_MODE = 0o600
 LOCAL_CONFIG_ALLOWED_KEYS: frozenset[str] = frozenset(
     {"version", "models", "client_metadata"}
 )
-MODEL_SCOPES: tuple[str, ...] = ("categories", "roles")
 MODEL_ENTRY_FIELDS: frozenset[str] = frozenset({"model", "thinking"})
 # Only Pi frontmatter carries a thinking level; other clients would ignore or reject it.
 THINKING_CLIENTS: frozenset[str] = frozenset({"pi"})
+# Clients whose rendered roles accept extra frontmatter from the local config (Pi extension lists).
+CLIENT_METADATA_CLIENTS: frozenset[str] = frozenset({"pi"})
 MAX_MODEL_ID_LENGTH = 200
 # Provider/model IDs across clients use these characters; anything else is a typo or injection.
 MODEL_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$")

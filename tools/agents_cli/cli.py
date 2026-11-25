@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .catalog import Catalog, load_catalog, validate_catalog
+from .config_args import add_config_flags, config_for_render
 from .constants import SUPPORTED_CLIENTS
 from .deploy import (
     DeploySummary,
@@ -20,12 +21,6 @@ from .deploy import (
 )
 from .errors import AgentsError
 from .interactive import is_interactive_tty, run_interactive_wizard
-from .local_config import (
-    LocalConfig,
-    check_catalog_ids,
-    default_config_path,
-    load_local_config,
-)
 from .models_cmd import add_models_parser, run_models_command
 from .packs import expand_pack_assets
 from .render import render_role_for_client
@@ -103,7 +98,7 @@ def _add_selection_flags(
         help="Copy skills instead of creating symlinks",
         **_kw(False),
     )
-    _add_config_flags(parser, suppress_defaults=suppress_defaults)
+    add_config_flags(parser, suppress_defaults=suppress_defaults)
     parser.add_argument(
         "--home", type=Path, help="Override target home directory", **_kw(Path.home())
     )
@@ -119,39 +114,6 @@ def _add_selection_flags(
         help="Launch interactive setup menu",
         **_kw(False),
     )
-
-
-def _add_config_flags(
-    parser: argparse.ArgumentParser, *, suppress_defaults: bool
-) -> None:
-    """Shared by install, status, render, and models so all read the same local config."""
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
-        "--config",
-        type=Path,
-        help="User-local model config (default: $XDG_CONFIG_HOME/agents/config.json)",
-        default=argparse.SUPPRESS if suppress_defaults else None,
-    )
-    group.add_argument(
-        "--no-config",
-        action="store_true",
-        help="Ignore the local config; render every role without a model",
-        default=argparse.SUPPRESS if suppress_defaults else False,
-    )
-
-
-def _config_path_from_args(args: argparse.Namespace) -> Path:
-    explicit: Path | None = getattr(args, "config", None)
-    home: Path = getattr(args, "home", None) or Path.home()
-    return explicit.expanduser() if explicit else default_config_path(home)
-
-
-def _config_from_args(args: argparse.Namespace, catalog: Catalog) -> LocalConfig:
-    if getattr(args, "no_config", False):
-        return LocalConfig()
-    config = load_local_config(_config_path_from_args(args), catalog.repo_root)
-    check_catalog_ids(config, catalog)
-    return config
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -198,10 +160,10 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ren = sub.add_parser("render", help="Print rendered client Markdown for one role")
     p_ren.add_argument("role_id", help="Role ID to render")
     p_ren.add_argument("--client", required=True, choices=SUPPORTED_CLIENTS)
-    _add_config_flags(p_ren, suppress_defaults=False)
+    add_config_flags(p_ren, suppress_defaults=False)
     p_ren.add_argument("--home", type=Path, default=Path.home())
 
-    add_models_parser(sub, _add_config_flags)
+    add_models_parser(sub)
 
     p_val = sub.add_parser("validate", help="Validate repository catalog structure")
     p_val.add_argument(
@@ -282,7 +244,7 @@ def _selection_from_args(
         theme_ids=theme_ids,
         include_styles=bool(args.styles),
         copy_skills=bool(args.copy),
-        config=_config_from_args(args, catalog),
+        config=config_for_render(args, catalog),
         dry_run=bool(args.dry_run),
         sync=select_all,
     )
@@ -367,7 +329,7 @@ def _cmd_install(catalog: Catalog, args: argparse.Namespace, argv: list[str]) ->
             home=args.home,
             default_copy=bool(args.copy),
             default_dry_run=bool(args.dry_run),
-            config=_config_from_args(args, catalog),
+            config=config_for_render(args, catalog),
         )
         if wiz_sel is None:
             return 0
@@ -407,15 +369,13 @@ def _run_action(args: argparse.Namespace, repo_root: Path, argv: list[str]) -> i
             render_role_for_client(
                 catalog.roles[args.role_id],
                 args.client,
-                _config_from_args(args, catalog),
+                config_for_render(args, catalog),
             ),
             end="",
         )
         return 0
     if subcmd == "models":
-        return run_models_command(
-            args, catalog, _config_path_from_args(args), _config_from_args
-        )
+        return run_models_command(args, catalog)
     if subcmd == "uninstall" or args.uninstall:
         clients = (
             tuple(dict.fromkeys(args.client)) if args.client else SUPPORTED_CLIENTS

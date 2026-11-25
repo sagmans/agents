@@ -1,7 +1,9 @@
 """`./setup models`: view and change the user-local model choices, by flag, file, or prompt.
 
 Installs read the same file, so a choice made here takes effect on the next install. Nothing here
-invents a model: non-interactive calls change only what a flag or file names explicitly.
+invents a model: non-interactive calls change only what a flag or file names explicitly. Loading
+skips the catalog ID check that installs apply, so `show` and `clear` can repair a file that
+names a removed role; every write is checked before it is saved.
 """
 
 from __future__ import annotations
@@ -12,52 +14,50 @@ from pathlib import Path
 from typing import Any
 
 from .catalog import Catalog
+from .config_args import add_config_flag, config_path_from_args, load_config_for_edit
 from .constants import MODEL_CLEAR_TOKEN, SUPPORTED_CLIENTS, THINKING_CLIENTS
 from .errors import AgentsError, ConfigError
 from .local_config import (
-    ALL_SCOPE,
+    ALL_KEY,
+    STALE_ID_HINT,
     LocalConfig,
     ModelChoice,
-    check_catalog_ids,
+    Scope,
     read_config_file,
     save_local_config,
+    stale_entries,
+    target_problem,
 )
 
 InputFn = Callable[[str], str]
-ConfigLoader = Callable[[argparse.Namespace, Catalog], LocalConfig]
-FlagAdder = Callable[..., None]
 _QUIT_TOKENS: frozenset[str] = frozenset({"q", "quit", "exit"})
-_SCOPE_LABELS: dict[str, str] = {
-    ALL_SCOPE: "client-wide",
-    "categories": "category",
-    "roles": "role",
-}
+_STALE_MARK = "(not applied: " + STALE_ID_HINT + ")"
 
 
 class ModelsWizardCancelled(Exception):
     """Raised when the user quits the editor; nothing is saved."""
 
 
-def add_models_parser(sub: Any, add_config_flags: FlagAdder) -> None:
+def add_models_parser(sub: Any) -> None:
     """Register `models` with its actions; `show` is the default."""
     p = sub.add_parser(
         "models",
         help="Show or change user-local model choices (never stored in this repository)",
     )
-    _add_common(p, add_config_flags, suppress=False)
+    _add_common(p, suppress=False)
     actions = p.add_subparsers(dest="models_action")
     _add_common(
-        actions.add_parser(
-            "show", help="Print the config path and every stored choice"
-        ),
-        add_config_flags,
+        actions.add_parser("show", help="Print the config path and every stored choice")
     )
     for name, helptext in (
-        ("set", "Store a model and/or thinking level for one scope"),
+        (
+            "set",
+            "Store a model and/or thinking level for one scope, keeping other fields",
+        ),
         ("clear", "Remove the choice for one scope"),
     ):
         ap = actions.add_parser(name, help=helptext)
-        _add_common(ap, add_config_flags)
+        _add_common(ap)
         ap.add_argument("--client", required=True, choices=SUPPORTED_CLIENTS)
         scope = ap.add_mutually_exclusive_group()
         scope.add_argument("--category", help="Category ID (default: client-wide)")
@@ -68,22 +68,14 @@ def add_models_parser(sub: Any, add_config_flags: FlagAdder) -> None:
     ap = actions.add_parser(
         "import", help="Merge a JSON file with the same schema into the config"
     )
-    _add_common(ap, add_config_flags)
+    _add_common(ap)
     ap.add_argument("file", type=Path)
-    _add_common(
-        actions.add_parser("edit", help="Change choices interactively"),
-        add_config_flags,
-    )
+    _add_common(actions.add_parser("edit", help="Change choices interactively"))
 
 
-def _add_common(
-    parser: argparse.ArgumentParser,
-    add_config_flags: FlagAdder,
-    *,
-    suppress: bool = True,
-) -> None:
-    """Accept `--home` and config flags before or after the action word."""
-    add_config_flags(parser, suppress_defaults=suppress)
+def _add_common(parser: argparse.ArgumentParser, *, suppress: bool = True) -> None:
+    """Accept `--home` and `--config` before or after the action word."""
+    add_config_flag(parser, suppress_default=suppress)
     parser.add_argument(
         "--home",
         type=Path,
@@ -92,15 +84,15 @@ def _add_common(
     )
 
 
-def _scope_of(args: argparse.Namespace) -> tuple[str, str | None]:
+def _scope_of(args: argparse.Namespace) -> tuple[Scope, str | None]:
     if getattr(args, "role", None):
-        return "roles", str(args.role)
+        return Scope.ROLE, str(args.role)
     if getattr(args, "category", None):
-        return "categories", str(args.category)
-    return ALL_SCOPE, None
+        return Scope.CATEGORY, str(args.category)
+    return Scope.ALL, None
 
 
-def _print_config(config: LocalConfig, path: Path) -> None:
+def _print_config(config: LocalConfig, path: Path, catalog: Catalog) -> None:
     print(f"config: {path} ({'present' if path.exists() else 'absent'})")
     if not config.models:
         print("no model choices: every role renders without a model field")
@@ -108,54 +100,62 @@ def _print_config(config: LocalConfig, path: Path) -> None:
         block = config.models.get(client)
         if block is None or block.is_empty:
             continue
-        rows: list[tuple[str, str, ModelChoice]] = []
-        if block.all is not None:
-            rows.append((ALL_SCOPE, "*", block.all))
-        rows += [("categories", k, v) for k, v in sorted(block.categories.items())]
-        rows += [("roles", k, v) for k, v in sorted(block.roles.items())]
         print(f"{client}:")
-        for scope, key, choice in rows:
+        for scope, key, choice in block.entries():
             parts = [f"model={choice.model}"] if choice.model else []
             parts += [f"thinking={choice.thinking}"] if choice.thinking else []
-            print(f"  {_SCOPE_LABELS[scope]:<11} {key:<44} {' '.join(parts)}")
+            if target_problem(catalog, client, scope, key) is not None:
+                parts.append(_STALE_MARK)
+            print(f"  {scope.label:<11} {key:<44} {' '.join(parts)}")
     if config.client_metadata:
         print(f"client_metadata: {', '.join(sorted(config.client_metadata))}")
 
 
+def _require_target(
+    catalog: Catalog, client: str, scope: Scope, key: str | None
+) -> None:
+    problem = target_problem(catalog, client, scope, key)
+    if problem is not None:
+        raise ConfigError("edit local config", None, problem)
+
+
 def run_models_command(
-    args: argparse.Namespace,
-    catalog: Catalog,
-    path: Path,
-    load_config: ConfigLoader,
-    input_fn: InputFn = input,
+    args: argparse.Namespace, catalog: Catalog, input_fn: InputFn = input
 ) -> int:
-    """Apply one models action; every write is validated against the catalog first."""
-    if getattr(args, "no_config", False):
-        raise AgentsError("models", None, "--no-config cannot be combined with models")
-    config = load_config(args, catalog)
+    """Apply one models action; only `clear` may leave entries the catalog cannot apply."""
+    path = config_path_from_args(args)
+    config = load_config_for_edit(args, catalog)
     action = getattr(args, "models_action", None) or "show"
     if action == "show":
-        _print_config(config, path)
+        _print_config(config, path, catalog)
         return 0
     if action == "set":
         if args.model is None and args.thinking is None:
             raise AgentsError("models set", None, "pass --model and/or --thinking")
         scope, key = _scope_of(args)
-        updated = config.with_choice(
+        _require_target(catalog, args.client, scope, key)
+        updated = config.with_overlay(
             args.client, scope, key, ModelChoice(args.model, args.thinking)
         )
     elif action == "clear":
         scope, key = _scope_of(args)
         updated = config.with_choice(args.client, scope, key, None)
     elif action == "import":
-        updated = config.merged_with(read_config_file(args.file.expanduser()))
+        incoming = read_config_file(args.file.expanduser())
+        stale = stale_entries(incoming, catalog)
+        if stale:
+            raise ConfigError(
+                "import local config",
+                args.file,
+                f"choices the catalog cannot apply: {', '.join(stale)}",
+            )
+        updated = config.merged_with(incoming)
     else:
         try:
             updated = edit_models_interactively(config, catalog, input_fn)
         except (EOFError, KeyboardInterrupt, ModelsWizardCancelled):
             print("\nAborted without changes.")
             return 0
-    check_catalog_ids(updated, catalog)
     save_local_config(updated, path, catalog.repo_root)
     print(f"saved {updated.entry_count()} model choice(s) to {path}")
     return 0
@@ -207,40 +207,43 @@ def _ask_choice(
     return ModelChoice(model=new_model, thinking=new_thinking)
 
 
+def _pick_scope(
+    catalog: Catalog, client: str, input_fn: InputFn
+) -> tuple[Scope, str | None] | None:
+    """Ask for a scope, then its ID; only IDs that can apply to `client` are offered."""
+    by_label = {scope.label: scope for scope in Scope}
+    picked = _pick("scope", tuple(by_label), input_fn)
+    if picked is None:
+        return None
+    scope = by_label[picked]
+    if scope is Scope.ALL:
+        return scope, None
+    roles = [r for r in catalog.roles.values() if r.supports(client)]
+    options = (
+        sorted({r.category for r in roles})
+        if scope is Scope.CATEGORY
+        else sorted(r.role_id for r in roles)
+    )
+    key = _pick(scope.label, tuple(options), input_fn)
+    return None if key is None else (scope, key)
+
+
 def edit_models_interactively(
     config: LocalConfig, catalog: Catalog, input_fn: InputFn = input
 ) -> LocalConfig:
     """Walk client, then scope, then value; invalid input is reported and asked again."""
-    categories = tuple(sorted({r.category for r in catalog.roles.values()}))
-    roles = tuple(sorted(catalog.roles))
     print("Model choices: role overrides category, category overrides client-wide.")
     print("Unset scopes render no model field, so the client's own default applies.")
     while True:
         client = _pick("client", SUPPORTED_CLIENTS, input_fn)
         if client is None:
             return config
-        scope_name = _pick("scope", ("client-wide", "category", "role"), input_fn)
-        if scope_name is None:
+        target = _pick_scope(catalog, client, input_fn)
+        if target is None:
             continue
-        scope, key = ALL_SCOPE, None
-        if scope_name == "category":
-            key = _pick("category", categories, input_fn)
-            scope = "categories"
-        elif scope_name == "role":
-            key = _pick("role", roles, input_fn)
-            scope = "roles"
-        if scope != ALL_SCOPE and key is None:
-            continue
+        scope, key = target
         block = config.models.get(client)
-        current = None
-        if block is not None:
-            current = (
-                block.all
-                if scope == ALL_SCOPE
-                else (block.categories if scope == "categories" else block.roles).get(
-                    key or ""
-                )
-            )
+        current = block.get(scope, key or ALL_KEY) if block is not None else None
         try:
             config = config.with_choice(
                 client, scope, key, _ask_choice(client, current, input_fn)

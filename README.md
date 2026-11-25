@@ -106,7 +106,11 @@ Install, status, and render read it automatically.
 ```
 
 A role choice overrides a category choice, which overrides the client-wide
-choice; each field (`model`, `thinking`) merges on its own. `thinking` applies
+choice; each field (`model`, `thinking`) merges on its own, and `set` or
+`import` change only the fields they name. A choice for a role or category the
+catalog no longer has stops install and render with an error; `models show`
+marks it and `models clear` removes it. A `--config` path that does not exist
+is an error, not an empty config. `thinking` applies
 to Pi only. Non-interactive runs never add a model on their own. See
 [Model choices](docs/compatibility.md#model-choices) for the file schema.
 

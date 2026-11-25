@@ -58,7 +58,7 @@ for testing without modifying `~/.agents`, `~/.claude`, `~/.config`, or `~/.pi`.
 
 `./setup models` writes and every install, status, and render reads one
 user-local JSON file. The default path is `$XDG_CONFIG_HOME/agents/config.json`,
-or `~/.config/agents/config.json` when `XDG_CONFIG_HOME` is unset. With
+or `~/.config/agents/config.json` when `XDG_CONFIG_HOME` is unset or relative. With
 `--home <dir>`, only `<dir>/.config/agents/config.json` is used, so sandboxes
 never read your real choices. The file must sit outside this repository.
 
@@ -85,5 +85,9 @@ never read your real choices. The file must sit outside this repository.
 | No entry means no `model` or `thinking` field in the rendered role | The client default applies; nothing is invented |
 | `thinking` is accepted for `pi` only | Other clients ignore or reject it |
 | Model IDs allow only letters, digits, and `. _ : / @ + -` | Blocks frontmatter injection |
-| Unknown clients, categories, roles, or keys fail closed | A rename never drops a choice silently |
+| Unknown clients, categories, roles, or keys fail closed on install, status, and render | A rename never drops a choice silently |
+| `models show` marks, and `models clear` removes, a choice the catalog cannot apply | The tool repairs its own file |
+| A role choice must name a role the client installs | A Pi-only role choice for Claude would never apply |
+| `models set` and `models import` change only the fields they name | Setting `thinking` keeps the stored `model` |
+| A `--config` file that does not exist is an error | A typo never renders every role without its model |
 | `client_metadata` supports `pi` only, with the role adapter key rules | Machine-specific extension lists stay local |

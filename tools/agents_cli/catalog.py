@@ -351,18 +351,18 @@ def _validate_role_clients(raw: Any, manifest_path: Path) -> tuple[str, ...]:
     """Default to every client; an explicit list must be a non-empty known subset."""
     if raw is None:
         return SUPPORTED_CLIENTS
+    items = cast(list[object], raw) if isinstance(raw, list) else []
     if (
-        not isinstance(raw, list)
-        or not raw
-        or any(c not in SUPPORTED_CLIENTS for c in cast(list[object], raw))
-        or len(set(cast(list[str], raw))) != len(cast(list[str], raw))
+        not items
+        or any(not isinstance(c, str) or c not in SUPPORTED_CLIENTS for c in items)
+        or len(set(items)) != len(items)
     ):
         raise CatalogValidationError(
             "validate role",
             manifest_path,
             f"clients must be a non-empty unique list drawn from {list(SUPPORTED_CLIENTS)}",
         )
-    picked = set(cast(list[str], raw))
+    picked = set(items)
     return tuple(c for c in SUPPORTED_CLIENTS if c in picked)
 
 

@@ -106,6 +106,14 @@ fi
 if ./setup models set --client pi --role no-such-role --model "$TEST_MODEL" --home "$h1" >/dev/null 2>&1; then
 	fail "model choice accepted for an unknown role"
 fi
+if ./setup models set --client claude --role pi-startup-profiler --model "$TEST_MODEL" --home "$h1" >/dev/null 2>&1; then
+	fail "model choice accepted for a role the client never installs"
+fi
+# Setting one field keeps the other field stored at the same scope.
+./setup models set --client pi --role feature-implementer --model "$TEST_ROLE_MODEL" --home "$h1" >/dev/null
+./setup models set --client pi --role feature-implementer --thinking low --home "$h1" >/dev/null
+./setup models show --home "$h1" | grep -E '^  role +feature-implementer ' | grep -Fq "model=$TEST_ROLE_MODEL thinking=low" ||
+	fail "setting thinking dropped the stored model"
 ./setup --all --styles --home "$h1" >/dev/null
 # Pi discovers the shared location natively; a second deployment causes collisions.
 assert_symlink "$h1/$SHARED_SKILLS_SUBPATH/commit"
@@ -267,6 +275,26 @@ printf '%s\n' "$rendered_browser" | grep -Fq 'exclude_extensions: ["pi-nvim", "p
 if ./setup render codebase-explorer --client opencode --no-config | grep -q '^model:'; then
 	fail "--no-config still rendered a model"
 fi
+# A named config that does not exist must fail, not silently render every role without a model.
+if ./setup render codebase-explorer --client opencode --config "$TMP_DIR/missing.json" >/dev/null 2>&1; then
+	fail "missing --config file unexpectedly accepted"
+fi
+# A stored choice for a role the catalog dropped blocks renders, but `models` can still show and
+# clear it, so the file never needs a hand edit.
+stale_config="$XDG_CONFIG_HOME/agents/config.json"
+python3 - "$stale_config" <<'PY'
+import json, sys
+path = sys.argv[1]
+data = json.load(open(path))
+data["models"].setdefault("pi", {}).setdefault("roles", {})["retired-role"] = {"thinking": "low"}
+json.dump(data, open(path, "w"))
+PY
+if ./setup render codebase-explorer --client pi >/dev/null 2>&1; then
+	fail "render ignored a choice for a removed role"
+fi
+./setup models show | grep -F 'retired-role' | grep -Fq 'not applied' || fail "show hid a stale choice"
+./setup models clear --client pi --role retired-role >/dev/null
+./setup render codebase-explorer --client pi >/dev/null || fail "clear did not repair a stale choice"
 
 bad_import="$TMP_DIR/bad-import.json"
 printf '{"models":{"pi":{"all":{"model":"x\\n---\\ninjected: true"}}}}' >"$bad_import"

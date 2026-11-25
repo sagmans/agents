@@ -10,7 +10,7 @@ from .catalog import Catalog
 from .constants import SUPPORTED_CLIENTS
 from .deploy import Selection
 from .errors import RenderError
-from .local_config import LocalConfig
+from .local_config import EMPTY_CONFIG, LocalConfig
 from .packs import expand_pack_assets
 
 InputFn = Callable[[str], str]
@@ -150,7 +150,7 @@ def run_interactive_wizard(
     home: Path,
     default_copy: bool = False,
     default_dry_run: bool = False,
-    config: LocalConfig | None = None,
+    config: LocalConfig = EMPTY_CONFIG,
     input_fn: InputFn = input,
 ) -> Selection | None:
     """Guide interactive client/asset selection cleanly before any file writes."""
@@ -160,7 +160,7 @@ def run_interactive_wizard(
             home=home,
             default_copy=default_copy,
             default_dry_run=default_dry_run,
-            config=config if config is not None else LocalConfig(),
+            config=config,
             input_fn=input_fn,
         )
     except (EOFError, KeyboardInterrupt, _WizardCancelled):

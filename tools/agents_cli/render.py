@@ -12,7 +12,7 @@ from .constants import (
     opencode_denies_edits,
 )
 from .errors import RenderError
-from .local_config import LocalConfig, ModelChoice
+from .local_config import EMPTY_CONFIG, LocalConfig, ModelChoice
 
 # Control characters that could split YAML scalar strings across lines or directives.
 _YAML_ESCAPES: dict[int, str] = {
@@ -161,7 +161,7 @@ def _render_generic(role: RolePackage, choice: ModelChoice) -> str:
 
 
 def render_role_for_client(
-    role: RolePackage, client: str, config: LocalConfig | None = None
+    role: RolePackage, client: str, config: LocalConfig = EMPTY_CONFIG
 ) -> str:
     """Render client-native frontmatter; a model field appears only when the user chose one."""
     if client not in SUPPORTED_CLIENTS:
@@ -170,10 +170,9 @@ def render_role_for_client(
         raise RenderError(
             "render role", role.role_id, f"role does not install into {client}"
         )
-    local = config if config is not None else LocalConfig()
-    choice = local.resolve(client, role.category, role.role_id)
+    choice = config.resolve(client, role.category, role.role_id)
     if client == "pi":
-        return _render_pi(role, choice, local)
+        return _render_pi(role, choice, config)
     if client == "opencode":
         return _render_opencode(role, choice)
     return _render_generic(role, choice)

@@ -9,13 +9,16 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, cast
 
 from .adapters import validate_pi_metadata
 from .catalog import Catalog
 from .constants import (
+    CLIENT_METADATA_CLIENTS,
     LOCAL_CONFIG_ALLOWED_KEYS,
     LOCAL_CONFIG_DEFAULT_BASE,
     LOCAL_CONFIG_DIR_MODE,
@@ -27,16 +30,39 @@ from .constants import (
     MAX_MODEL_ID_LENGTH,
     MODEL_ENTRY_FIELDS,
     MODEL_ID_PATTERN,
-    MODEL_SCOPES,
     SUPPORTED_CLIENTS,
     THINKING_CLIENTS,
     VALID_PI_THINKING_LEVELS,
 )
-from .errors import CatalogValidationError, ConfigError
+from .errors import AgentsError, CatalogValidationError, ConfigError
 from .fs_ops import atomic_write_text, read_json_object, validate_target_path
 
-# Client-wide scope key inside one client's block; category and role maps sit beside it.
-ALL_SCOPE = "all"
+
+class Scope(StrEnum):
+    """Where a choice applies; values are the JSON keys inside one client's block."""
+
+    ALL = "all"
+    CATEGORY = "categories"
+    ROLE = "roles"
+
+    @property
+    def label(self) -> str:
+        return _SCOPE_LABELS[self]
+
+
+_SCOPE_LABELS: dict[Scope, str] = {
+    Scope.ALL: "client-wide",
+    Scope.CATEGORY: "category",
+    Scope.ROLE: "role",
+}
+# The client-wide scope holds one entry; a fixed key lets every scope share one map shape.
+ALL_KEY = "*"
+# Narrowest first: the order `resolve` walks and `show` prints.
+RESOLUTION_ORDER: tuple[Scope, ...] = (Scope.ROLE, Scope.CATEGORY, Scope.ALL)
+# Hint printed when stored IDs no longer exist, so users fix the file with the tool, not by hand.
+STALE_ID_HINT = (
+    "remove it with `./setup models clear --client <client> --role|--category <id>`"
+)
 
 
 @dataclass(frozen=True)
@@ -45,6 +71,17 @@ class ModelChoice:
 
     model: str | None = None
     thinking: str | None = None
+
+    @property
+    def is_empty(self) -> bool:
+        return self.model is None and self.thinking is None
+
+    def overlay(self, other: ModelChoice) -> ModelChoice:
+        """Fields `other` sets win; unset fields keep this choice, so setting one never drops another."""
+        return ModelChoice(
+            model=other.model if other.model is not None else self.model,
+            thinking=other.thinking if other.thinking is not None else self.thinking,
+        )
 
     def as_json(self) -> dict[str, str]:
         out: dict[str, str] = {}
@@ -55,25 +92,39 @@ class ModelChoice:
         return out
 
 
+def _empty_scopes() -> dict[Scope, dict[str, ModelChoice]]:
+    return {scope: {} for scope in Scope}
+
+
 @dataclass(frozen=True)
 class ClientModels:
-    """Choices for one client, resolved role first, then category, then client-wide."""
+    """Choices for one client, keyed by scope; the client-wide entry sits under `ALL_KEY`."""
 
-    all: ModelChoice | None = None
-    categories: dict[str, ModelChoice] = field(default_factory=dict[str, ModelChoice])
-    roles: dict[str, ModelChoice] = field(default_factory=dict[str, ModelChoice])
+    scopes: Mapping[Scope, Mapping[str, ModelChoice]] = field(
+        default_factory=_empty_scopes
+    )
+
+    def get(self, scope: Scope, key: str) -> ModelChoice | None:
+        return self.scopes.get(scope, {}).get(key)
+
+    def entries(self) -> Iterator[tuple[Scope, str, ModelChoice]]:
+        """Every stored choice, client-wide first, then sorted categories and roles."""
+        for scope in Scope:
+            entries = self.scopes.get(scope, {})
+            for key in sorted(entries):
+                yield scope, key, entries[key]
 
     @property
     def is_empty(self) -> bool:
-        return self.all is None and not self.categories and not self.roles
+        return not any(self.scopes.get(scope) for scope in Scope)
 
 
 @dataclass(frozen=True)
 class LocalConfig:
     """Parsed local config; the empty default renders every role without a model."""
 
-    models: dict[str, ClientModels] = field(default_factory=dict[str, ClientModels])
-    client_metadata: dict[str, dict[str, Any]] = field(
+    models: Mapping[str, ClientModels] = field(default_factory=dict[str, ClientModels])
+    client_metadata: Mapping[str, dict[str, Any]] = field(
         default_factory=dict[str, dict[str, Any]]
     )
     source: Path | None = None
@@ -83,18 +134,13 @@ class LocalConfig:
         block = self.models.get(client)
         if block is None:
             return ModelChoice()
-        model: str | None = None
-        thinking: str | None = None
-        for choice in (
-            block.roles.get(role_id),
-            block.categories.get(category),
-            block.all,
-        ):
-            if choice is None:
-                continue
-            model = model if model is not None else choice.model
-            thinking = thinking if thinking is not None else choice.thinking
-        return ModelChoice(model=model, thinking=thinking)
+        keys = {Scope.ROLE: role_id, Scope.CATEGORY: category, Scope.ALL: ALL_KEY}
+        merged = ModelChoice()
+        for scope in reversed(RESOLUTION_ORDER):
+            choice = block.get(scope, keys[scope])
+            if choice is not None:
+                merged = merged.overlay(choice)
+        return merged
 
     def to_json(self) -> dict[str, Any]:
         models: dict[str, Any] = {}
@@ -103,85 +149,90 @@ class LocalConfig:
             if block is None or block.is_empty:
                 continue
             out: dict[str, Any] = {}
-            if block.all is not None:
-                out[ALL_SCOPE] = block.all.as_json()
-            for scope, entries in (
-                ("categories", block.categories),
-                ("roles", block.roles),
-            ):
-                if entries:
-                    out[scope] = {k: entries[k].as_json() for k in sorted(entries)}
+            for scope, key, choice in block.entries():
+                if scope is Scope.ALL:
+                    out[scope.value] = choice.as_json()
+                else:
+                    out.setdefault(scope.value, {})[key] = choice.as_json()
             models[client] = out
         data: dict[str, Any] = {"version": LOCAL_CONFIG_VERSION, "models": models}
         if self.client_metadata:
-            data["client_metadata"] = self.client_metadata
+            data["client_metadata"] = dict(self.client_metadata)
         return data
 
     def with_choice(
-        self, client: str, scope: str, key: str | None, choice: ModelChoice | None
+        self, client: str, scope: Scope, key: str | None, choice: ModelChoice | None
     ) -> LocalConfig:
-        """Return a copy with one scope set, or removed when `choice` is None or empty."""
+        """Return a copy with one scope replaced, or removed when `choice` is None or empty."""
         if client not in SUPPORTED_CLIENTS:
             raise ConfigError(
                 "edit local config", self.source, f"unknown client {client!r}"
             )
+        slot = _slot_key(scope, key, self.source)
         if choice is not None:
             validate_choice(client, choice, self.source)
         block = self.models.get(client, ClientModels())
-        empty = choice is None or (choice.model is None and choice.thinking is None)
-        new_value = None if empty else choice
-        if scope == ALL_SCOPE:
-            new_block = ClientModels(
-                all=new_value, categories=block.categories, roles=block.roles
-            )
+        scopes = {s: dict(block.scopes.get(s, {})) for s in Scope}
+        if choice is None or choice.is_empty:
+            scopes[scope].pop(slot, None)
         else:
-            if key is None:
-                raise ConfigError("edit local config", self.source, "missing scope ID")
-            current = dict(block.categories if scope == "categories" else block.roles)
-            if new_value is None:
-                current.pop(key, None)
-            else:
-                current[key] = new_value
-            new_block = (
-                ClientModels(all=block.all, categories=current, roles=block.roles)
-                if scope == "categories"
-                else ClientModels(
-                    all=block.all, categories=block.categories, roles=current
-                )
-            )
+            scopes[scope][slot] = choice
         models = dict(self.models)
-        models[client] = new_block
+        models[client] = ClientModels(scopes=scopes)
         return LocalConfig(
             models=models, client_metadata=self.client_metadata, source=self.source
         )
 
+    def with_overlay(
+        self, client: str, scope: Scope, key: str | None, choice: ModelChoice
+    ) -> LocalConfig:
+        """Set only the fields `choice` names, keeping any other field already stored there."""
+        block = self.models.get(client)
+        current = (
+            block.get(scope, _slot_key(scope, key, self.source)) if block else None
+        )
+        merged = (current or ModelChoice()).overlay(choice)
+        return self.with_choice(client, scope, key, merged)
+
     def merged_with(self, other: LocalConfig) -> LocalConfig:
-        """Overlay `other` on this config; its entries win where both set one."""
+        """Overlay `other` field by field; its fields win where both set one."""
         result = LocalConfig(
-            models=dict(self.models),
+            models=self.models,
             client_metadata={**self.client_metadata, **other.client_metadata},
             source=self.source,
         )
         for client, block in other.models.items():
-            if block.all is not None:
-                result = result.with_choice(client, ALL_SCOPE, None, block.all)
-            for key, choice in block.categories.items():
-                result = result.with_choice(client, "categories", key, choice)
-            for key, choice in block.roles.items():
-                result = result.with_choice(client, "roles", key, choice)
+            for scope, key, choice in block.entries():
+                result = result.with_overlay(client, scope, key, choice)
         return result
 
     def entry_count(self) -> int:
-        return sum(
-            (block.all is not None) + len(block.categories) + len(block.roles)
-            for block in self.models.values()
+        return sum(sum(1 for _ in block.entries()) for block in self.models.values())
+
+
+# Shared empty default for callers that render without any user choices.
+EMPTY_CONFIG = LocalConfig()
+
+
+def _slot_key(scope: Scope, key: str | None, path: Path | None) -> str:
+    if scope is Scope.ALL:
+        return ALL_KEY
+    if not key:
+        raise ConfigError(
+            "edit local config", path, f"missing {scope.label} ID for this scope"
         )
+    return key
 
 
 def default_config_path(home: Path) -> Path:
-    """Honor XDG for the real home only, so `--home` sandboxes never read the user's file."""
+    """Honor an absolute XDG path for the real home only, so `--home` sandboxes never read it.
+
+    The XDG Base Directory spec says relative values are invalid; using one would make the file
+    location depend on the current directory.
+    """
     xdg = os.environ.get(LOCAL_CONFIG_XDG_ENV, "").strip()
-    if xdg and home.expanduser().resolve() == Path.home().resolve():
+    real_home = home.expanduser().resolve() == Path.home().resolve()
+    if xdg and real_home and Path(xdg).is_absolute():
         base = Path(xdg)
     else:
         base = home / LOCAL_CONFIG_DEFAULT_BASE
@@ -238,16 +289,17 @@ def _parse_choice(raw: Any, client: str, where: str, path: Path) -> ModelChoice:
 
 
 def _parse_scope_map(
-    raw: Any, client: str, scope: str, path: Path
+    raw: Any, client: str, scope: Scope, path: Path
 ) -> dict[str, ModelChoice]:
     if raw is None:
         return {}
+    where = f"models.{client}.{scope.value}"
+    if scope is Scope.ALL:
+        return {ALL_KEY: _parse_choice(raw, client, where, path)}
     if not isinstance(raw, dict):
-        raise ConfigError(
-            "load local config", path, f"models.{client}.{scope} must be an object"
-        )
+        raise ConfigError("load local config", path, f"{where} must be an object")
     return {
-        str(key): _parse_choice(value, client, f"models.{client}.{scope}.{key}", path)
+        str(key): _parse_choice(value, client, f"{where}.{key}", path)
         for key, value in cast(dict[str, Any], raw).items()
     }
 
@@ -266,22 +318,18 @@ def _parse_models(raw: Any, path: Path) -> dict[str, ClientModels]:
                 "load local config", path, f"models.{client} must be an object"
             )
         typed = cast(dict[str, Any], block)
-        unknown = sorted(set(typed) - {ALL_SCOPE, *MODEL_SCOPES})
+        unknown = sorted(set(typed) - {scope.value for scope in Scope})
         if unknown:
             raise ConfigError(
                 "load local config",
                 path,
                 f"models.{client} has unknown key(s): {', '.join(unknown)}",
             )
-        all_raw = typed.get(ALL_SCOPE)
         out[client] = ClientModels(
-            all=None
-            if all_raw is None
-            else _parse_choice(all_raw, client, f"models.{client}.all", path),
-            categories=_parse_scope_map(
-                typed.get("categories"), client, "categories", path
-            ),
-            roles=_parse_scope_map(typed.get("roles"), client, "roles", path),
+            scopes={
+                scope: _parse_scope_map(typed.get(scope.value), client, scope, path)
+                for scope in Scope
+            }
         )
     return out
 
@@ -295,11 +343,12 @@ def _parse_client_metadata(raw: Any, path: Path) -> dict[str, dict[str, Any]]:
         )
     out: dict[str, dict[str, Any]] = {}
     for client, meta in cast(dict[str, Any], raw).items():
-        if client != "pi" or not isinstance(meta, dict):
+        if client not in CLIENT_METADATA_CLIENTS or not isinstance(meta, dict):
             raise ConfigError(
                 "load local config",
                 path,
-                f"client_metadata supports only a pi object, got {client!r}",
+                f"client_metadata supports only {sorted(CLIENT_METADATA_CLIENTS)} objects, "
+                f"got {client!r}",
             )
         typed = {str(k): v for k, v in cast(dict[str, Any], meta).items()}
         try:
@@ -333,11 +382,19 @@ def read_config_file(path: Path) -> LocalConfig:
     return parse_config_data(data, path)
 
 
-def load_local_config(path: Path, repo_root: Path) -> LocalConfig:
-    """Load the local config if present; a missing file is the empty, model-free config."""
+def load_local_config(
+    path: Path, repo_root: Path, *, must_exist: bool = False
+) -> LocalConfig:
+    """Load the config; a missing default file is the empty, model-free config.
+
+    `must_exist` is set for a path the user named, so a typo fails instead of silently
+    rendering every role without the models that user chose.
+    """
     expanded = path.expanduser()
     ensure_outside_repo(expanded, repo_root)
     if not expanded.exists():
+        if must_exist:
+            raise ConfigError("load local config", expanded, "file does not exist")
         return LocalConfig(source=expanded)
     if not expanded.is_file():
         raise ConfigError("load local config", expanded, "not a regular file")
@@ -346,25 +403,53 @@ def load_local_config(path: Path, repo_root: Path) -> LocalConfig:
 
 def ensure_outside_repo(path: Path, repo_root: Path) -> None:
     """User choices must never land in, or be read from, the public catalog checkout."""
-    validate_target_path(repo_root, path)
+    try:
+        validate_target_path(repo_root, path)
+    except AgentsError as exc:
+        raise ConfigError(
+            "check local config path",
+            path,
+            "config file must live outside the catalog checkout",
+        ) from exc
+
+
+def target_problem(
+    catalog: Catalog, client: str, scope: Scope, key: str | None
+) -> str | None:
+    """Why a choice for this scope could never apply, or None when it can."""
+    if scope is Scope.CATEGORY and key not in {
+        r.category for r in catalog.roles.values()
+    }:
+        return f"unknown category {key!r}"
+    if scope is Scope.ROLE:
+        role = catalog.roles.get(key or "")
+        if role is None:
+            return f"unknown role {key!r}"
+        if not role.supports(client):
+            return f"role {key!r} does not install into {client}"
+    return None
+
+
+def stale_entries(config: LocalConfig, catalog: Catalog) -> list[str]:
+    """Stored choices the catalog can no longer apply, as `models.<client>.<scope>.<id>`."""
+    stale: list[str] = []
+    for client, block in config.models.items():
+        for scope, key, _ in block.entries():
+            if target_problem(catalog, client, scope, key) is not None:
+                stale.append(f"models.{client}.{scope.value}.{key}")
+    return stale
 
 
 def check_catalog_ids(config: LocalConfig, catalog: Catalog) -> None:
     """Fail closed on renamed or mistyped IDs rather than silently dropping a choice."""
-    categories = {role.category for role in catalog.roles.values()}
-    role_ids = set(catalog.roles)
-    for client, block in config.models.items():
-        for scope, known, entries in (
-            ("categories", categories, block.categories),
-            ("roles", role_ids, block.roles),
-        ):
-            unknown = sorted(set(entries) - known)
-            if unknown:
-                raise ConfigError(
-                    "check local config",
-                    config.source,
-                    f"models.{client}.{scope} names unknown ID(s): {', '.join(unknown)}",
-                )
+    stale = stale_entries(config, catalog)
+    if stale:
+        raise ConfigError(
+            "check local config",
+            config.source,
+            f"choices name roles or categories the catalog cannot apply: {', '.join(stale)}; "
+            + STALE_ID_HINT,
+        )
 
 
 def save_local_config(config: LocalConfig, path: Path, repo_root: Path) -> None:
