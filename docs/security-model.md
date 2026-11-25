@@ -21,13 +21,16 @@ Repository Catalog (Read-Only Source)
 
 - **Deny-by-default OpenCode permissions:** `./setup validate` enforces
   wildcard `"edit": "deny"` on every role outside `MUTATING_ENGINEER_ROLES`, and
-  all 36 non-mutating catalog roles also configure `"subagent": "deny"` and
+  all 35 non-mutating catalog roles also configure `"subagent": "deny"` and
   `"shell": "ask"`.
 - **Permission resource strictness:** OpenCode permission validation accepts
   only wildcard `"resource": "*"` rules until resource-scoped nested rules are
   rendered explicitly.
-- **Explicit mutating set:** Only the 14 engineering roles in
-  `MUTATING_ENGINEER_ROLES` omit the wildcard `edit: deny` guard.
+- **Explicit mutating set:** Only the 15 roles in
+  `MUTATING_ENGINEER_ROLES` may omit the wildcard `edit: deny` guard.
+  `general-purpose` is in the set because it replaces client default
+  subagents that must be able to edit, but its OpenCode adapter keeps the
+  deny so OpenCode runs it read-only.
 
 ## Installer Safeguards
 

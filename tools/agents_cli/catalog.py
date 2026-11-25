@@ -213,6 +213,10 @@ def _validate_role_definition(definition_path: Path, role_id: str) -> str:
             "validate role", definition_path, "missing DEFINITION.md"
         )
     text = _read_utf8_text(definition_path, "validate role")
+    if not text.startswith("# "):
+        raise CatalogValidationError(
+            "validate role", definition_path, "must start with an H1 title"
+        )
     sections = _role_sections(text)
     headings = tuple(name for name, _ in sections)
     if headings != REQUIRED_ROLE_SECTIONS:
@@ -234,11 +238,16 @@ def _validate_role_definition(definition_path: Path, role_id: str) -> str:
         if role_id in MUTATING_ENGINEER_ROLES
         else REPORT_ONLY_GUARDRAIL
     )
-    if guardrail not in bodies["Rules"].splitlines():
+    stance_lines = [
+        line
+        for line in bodies["Rules"].splitlines()
+        if line.startswith(("- Stance:", "- Report-only", "- Read-only"))
+    ]
+    if stance_lines != [guardrail]:
         raise CatalogValidationError(
             "validate role",
             definition_path,
-            f"Rules must contain the stance line verbatim: {guardrail}",
+            f"Rules must state the stance once, verbatim: {guardrail}",
         )
     line_count = len(text.strip().splitlines())
     if line_count > MAX_ROLE_DEFINITION_LINES:

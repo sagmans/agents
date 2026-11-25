@@ -21,7 +21,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | Packs | 8 | `packs.json` | `core`, `delivery`, `review`, `architecture`, `implementation`, `qa-testing`, `operations`, `research` |
 | Skills | 12 | `skills/` | Git, commit, PR triage/merge, diff guide, report card, AGENTS.md |
-| Roles | 50 | `roles/<category>/` | 36 read-only review/analysis roles + 14 mutating engineering roles |
+| Roles | 50 | `roles/<category>/` | 35 read-only review/analysis roles + 15 mutating roles |
 | Pi Prompts | 4 | `prompts/` | Deep code review, security audit, test review, decomposition |
 | OpenCode Commands | 8 | `adapters/opencode/commands/` | Slash-command workflows for commit, issue, PR, handoff, release |
 | Pi Theme | 1 | `themes/` | `violet-orbit.json` |
