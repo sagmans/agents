@@ -9,6 +9,7 @@ from .constants import (
     HEX_COLOR_PATTERN,
     MUTATING_ENGINEER_ROLES,
     OPENCODE_ALLOWED_METADATA_FIELDS,
+    OPENCODE_EDIT_DENIED_ROLES,
     PI_ALLOWED_METADATA_FIELDS,
     SAFE_KEY_PATTERN,
     VALID_OPENCODE_MODES,
@@ -146,10 +147,15 @@ def _validate_permission_rule(
 
 
 def _validate_opencode_permissions(role_id: str, permissions: Any, path: Path) -> None:
+    edit_denied = (
+        role_id not in MUTATING_ENGINEER_ROLES or role_id in OPENCODE_EDIT_DENIED_ROLES
+    )
     if permissions is None:
-        if role_id not in MUTATING_ENGINEER_ROLES:
+        if edit_denied:
             raise CatalogValidationError(
-                "validate opencode metadata", path, "non-mutating role must deny edits"
+                "validate opencode metadata",
+                path,
+                "read-only OpenCode role must deny edits",
             )
         return
     if not isinstance(permissions, list) or not permissions:
@@ -169,11 +175,11 @@ def _validate_opencode_permissions(role_id: str, permissions: Any, path: Path) -
         seen_actions.add(action)
         if action == "edit" and resource == "*" and effect == "deny":
             has_wildcard_edit_deny = True
-    if role_id not in MUTATING_ENGINEER_ROLES and not has_wildcard_edit_deny:
+    if edit_denied and not has_wildcard_edit_deny:
         raise CatalogValidationError(
             "validate opencode metadata",
             path,
-            "non-mutating role must deny wildcard edits",
+            "read-only OpenCode role must deny wildcard edits",
         )
 
 

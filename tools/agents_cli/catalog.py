@@ -19,13 +19,11 @@ from .constants import (
     MAX_ROLE_SUMMARY_CHARS,
     MAX_ROLE_WORKFLOW_STEPS,
     MIN_ROLE_WORKFLOW_STEPS,
-    MUTATING_ENGINEER_ROLES,
-    MUTATING_GUARDRAIL,
-    REPORT_ONLY_GUARDRAIL,
     REQUIRED_ROLE_SECTIONS,
     ROLE_MANIFEST_ALLOWED_FIELDS,
     ROLE_SUMMARY_PREFIXES,
     VALID_CATEGORIES,
+    role_guardrail,
 )
 from .errors import CatalogValidationError
 from .fs_ops import read_json_object
@@ -200,6 +198,13 @@ def _validate_skill_dir(skill_dir: Path, repo_root: Path) -> SkillPackage:
     return SkillPackage(skill_id=skill_id, description=description, path=skill_dir)
 
 
+# Any bullet that reads as a stance (bold or not, hyphenated or not) counts, so a second
+# restatement cannot slip past the one-stance-line rule by changing its markup.
+STANCE_LINE_PATTERN = re.compile(
+    r"^- (stance:|report[- ]only|read[- ]only)", re.IGNORECASE
+)
+
+
 def _role_sections(text: str) -> list[tuple[str, str]]:
     """Split a definition into (heading, body) pairs, ignoring headings inside fenced templates."""
     unfenced = re.sub(r"^```.*?^```[ \t]*$", "", text, flags=re.MULTILINE | re.DOTALL)
@@ -233,15 +238,11 @@ def _validate_role_definition(definition_path: Path, role_id: str) -> str:
             definition_path,
             f"Workflow has {steps} steps; expected {MIN_ROLE_WORKFLOW_STEPS}-{MAX_ROLE_WORKFLOW_STEPS}",
         )
-    guardrail = (
-        MUTATING_GUARDRAIL
-        if role_id in MUTATING_ENGINEER_ROLES
-        else REPORT_ONLY_GUARDRAIL
-    )
+    guardrail = role_guardrail(role_id)
     stance_lines = [
         line
         for line in bodies["Rules"].splitlines()
-        if line.startswith(("- Stance:", "- Report-only", "- Read-only"))
+        if STANCE_LINE_PATTERN.match(line.replace("*", "").replace("_", ""))
     ]
     if stance_lines != [guardrail]:
         raise CatalogValidationError(

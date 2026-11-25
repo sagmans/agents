@@ -32,9 +32,12 @@ Keep both short and make each role's boundary obvious next to its siblings.
 - **Name siblings in `Scope`.** Every "Out" item points to the role that owns it.
 - **Mutation stance comes from `MUTATING_ENGINEER_ROLES`.** Only listed roles
   edit files; every other role is report-only and its OpenCode adapter denies
-  edits. `Rules` carries the matching stance line verbatim
-  (`REPORT_ONLY_GUARDRAIL` or `MUTATING_GUARDRAIL` in
-  `tools/agents_cli/constants.py`), so every role states the same guardrail.
+  edits. `Rules` carries the stance line that `role_guardrail` in
+  `tools/agents_cli/constants.py` returns, verbatim and once
+  (`REPORT_ONLY_GUARDRAIL`, `MUTATING_GUARDRAIL`, or the `general-purpose`
+  fallback override), so every role states the same guardrail.
+  `OPENCODE_EDIT_DENIED_ROLES` lists mutating roles that OpenCode still runs
+  read-only.
 
 Catalog loading enforces the summary form, the line cap, the section order,
 the Workflow step count, and the stance line on every command, not only

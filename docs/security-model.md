@@ -29,8 +29,10 @@ Repository Catalog (Read-Only Source)
 - **Explicit mutating set:** Only the 15 roles in
   `MUTATING_ENGINEER_ROLES` may omit the wildcard `edit: deny` guard.
   `general-purpose` is in the set because it replaces client default
-  subagents that must be able to edit, but its OpenCode adapter keeps the
-  deny so OpenCode runs it read-only.
+  subagents that must be able to edit and, when the caller asks, commit
+  locally. It is also in `OPENCODE_EDIT_DENIED_ROLES`, so validation
+  requires its OpenCode adapter to keep the edit deny and OpenCode runs it
+  read-only.
 
 ## Installer Safeguards
 
