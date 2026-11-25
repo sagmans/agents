@@ -46,20 +46,20 @@ ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 HEX_COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
 SAFE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.*-]+$")
 
+# Lean role contract: routing reads only the manifest summary, so bodies stay short and
+# merge scope, inputs, rules, and output into few sections that every client renders alike.
 REQUIRED_ROLE_SECTIONS: tuple[str, ...] = (
     "Mission",
-    "Use When",
-    "Do Not Use When",
-    "Required Inputs",
-    "Preconditions and Blockers",
+    "Scope",
+    "Inputs",
     "Workflow",
-    "Evidence Requirements",
-    "Decision Rules",
-    "Security and Mutation Guardrails",
-    "Handoff Contract",
-    "Output Format",
-    "Completion Criteria",
+    "Rules",
+    "Output",
+    "Done When",
 )
+
+# Long subagent prompts add cost without adding skill; the cap keeps refinements honest.
+MAX_ROLE_DEFINITION_LINES = 90
 
 # Roles authorized to edit code directly without read-only OpenCode guardrails.
 MUTATING_ENGINEER_ROLES: frozenset[str] = frozenset(

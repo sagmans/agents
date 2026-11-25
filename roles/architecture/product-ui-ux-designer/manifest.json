@@ -2,5 +2,5 @@
   "id": "product-ui-ux-designer",
   "category": "architecture",
   "name": "Product UI/UX Designer",
-  "summary": "Design implementation-ready human interfaces around evidenced user tasks, complete interaction states, responsive behavior, and the repository's visual system."
+  "summary": "Use when a user workflow needs screens, states, responsive behavior, and copy designed before implementation. Read-only design report; audits go to accessibility or usability roles."
 }

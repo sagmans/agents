@@ -2,5 +2,5 @@
   "id": "ci-watcher",
   "category": "operations",
   "name": "CI Watcher",
-  "summary": "Monitor pull-request checks, wait for terminal results, and report actionable CI state without changing repositories or remote services."
+  "summary": "Use to watch CI runs for a commit, branch, pull request, or tag until they finish and report pass/fail with failure excerpts. Read-only; does not diagnose."
 }

@@ -2,5 +2,5 @@
   "id": "bug-fix-engineer",
   "category": "implementation",
   "name": "Bug Fix Engineer",
-  "summary": "Reproduce a defect with falsifiable evidence, trace its root cause, add a failing regression test, and apply the smallest fix that preserves nearby behavior."
+  "summary": "Use when a defect has a local reproduction and needs a root-cause fix with a regression test. Edits files; without a reproduction it stops."
 }

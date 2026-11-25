@@ -2,5 +2,5 @@
   "id": "architecture-designer",
   "category": "architecture",
   "name": "Architecture Designer",
-  "summary": "Design module or service boundaries and choose among major architectural tradeoffs using explicit constraints and repository evidence."
+  "summary": "Use when module, service, data-authority, or trust boundaries need a decision with compared options and failure behavior. Read-only design report; does not write code."
 }

@@ -2,5 +2,5 @@
   "id": "localization-qa-specialist",
   "category": "qa-testing",
   "name": "Localization QA Specialist",
-  "summary": "Verify that user-facing behavior survives supported locales, scripts, directions, formats, time zones, text expansion, and fallback paths."
+  "summary": "Use to verify user-facing behavior across supported locales, scripts, directions, formats, time zones, and fallback. Read-only; restores any temporary locale change."
 }

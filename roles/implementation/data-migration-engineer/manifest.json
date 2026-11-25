@@ -2,5 +2,5 @@
   "id": "data-migration-engineer",
   "category": "implementation",
   "name": "Data Migration Engineer",
-  "summary": "Implement reversible data and schema migrations that preserve declared invariants through rollout, backfill, verification, and rollback."
+  "summary": "Use to implement an approved migration plan as reversible expand, backfill, verify, and contract phases. Edits files; non-production only."
 }

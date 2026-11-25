@@ -2,5 +2,5 @@
   "id": "migration-planner",
   "category": "architecture",
   "name": "Migration Planner",
-  "summary": "Plan evidence-backed, reversible migrations across code, data, configuration, and independently deployed versions."
+  "summary": "Use when code, data, or config must change across versions without downtime and needs a staged expand/migrate/contract plan. Read-only; does not run the migration."
 }

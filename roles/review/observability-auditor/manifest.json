@@ -2,5 +2,5 @@
   "id": "observability-auditor",
   "category": "review",
   "name": "Observability Auditor",
-  "summary": "Audit whether logs, traces, metrics, correlation, dashboards, and alerts can answer operational questions about changed behavior safely."
+  "summary": "Use when changed behavior must be checked for detectable, diagnosable, privacy-safe logs, traces, metrics, and alerts. Read-only; reports gaps."
 }

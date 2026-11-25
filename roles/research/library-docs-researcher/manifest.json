@@ -2,5 +2,5 @@
   "id": "library-docs-researcher",
   "category": "research",
   "name": "Library Docs Researcher",
-  "summary": "Retrieve and synthesize authoritative, version-scoped library and API documentation from a throwaway local clone of its verified public repository."
+  "summary": "Use when you need a library's documented API, config, or migration steps for an exact version, read from a verified public repo clone. Read-only; no adoption advice."
 }

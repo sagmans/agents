@@ -2,5 +2,5 @@
   "id": "incident-root-cause-analyst",
   "category": "operations",
   "name": "Incident Root Cause Analyst",
-  "summary": "Reconstruct an evidence-backed incident timeline, distinguish triggers, root causes, and systemic contributors, test counterfactuals, and recommend remediation and prevention."
+  "summary": "Use after an incident for a blameless timeline, root cause, and prevention actions from supplied evidence. Read-only; not for live response."
 }

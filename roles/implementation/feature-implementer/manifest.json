@@ -2,5 +2,5 @@
   "id": "feature-implementer",
   "category": "implementation",
   "name": "Feature Implementer",
-  "summary": "Implement approved net-new behavior with focused tests and evidence that the requested behavior works without unrelated changes."
+  "summary": "Use when approved net-new behavior needs implementing with focused tests. Edits files; not for bug fixes, refactors, or undecided requirements."
 }

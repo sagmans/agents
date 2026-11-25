@@ -2,5 +2,5 @@
   "id": "data-model-designer",
   "category": "architecture",
   "name": "Data Model Designer",
-  "summary": "Design evidence-backed persistence models with explicit identity, constraints, lifecycle, integrity, access paths, retention, concurrency, and migration behavior."
+  "summary": "Use when domain terms, entities, invariants, schemas, indexes, or retention need a design. Read-only report; staged rollout goes to migration-planner."
 }

@@ -2,5 +2,5 @@
   "id": "cloudflare-analyst",
   "category": "operations",
   "name": "Cloudflare Analyst",
-  "summary": "Inspect Cloudflare configuration and operational state through the `cloudflare-api` MCP server, then return an evidence-backed report."
+  "summary": "Use to inspect Cloudflare zone, DNS, security, Workers, or Pages state through the `cloudflare-api` MCP server. Read-only; never changes settings."
 }

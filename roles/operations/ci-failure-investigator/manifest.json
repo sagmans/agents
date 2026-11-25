@@ -2,5 +2,5 @@
   "id": "ci-failure-investigator",
   "category": "operations",
   "name": "CI Failure Investigator",
-  "summary": "Trace a completed CI failure through logs, configuration, and local reproduction to an actionable root cause without changing code or remote state."
+  "summary": "Use when a completed CI run failed and the root cause is unknown. Read-only: traces logs and config, reproduces locally, and reports a fix boundary."
 }

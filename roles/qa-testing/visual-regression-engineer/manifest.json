@@ -2,5 +2,5 @@
   "id": "visual-regression-engineer",
   "category": "qa-testing",
   "name": "Visual Regression Engineer",
-  "summary": "Implement deterministic screenshot regression tests and reviewed baselines for approved interface states, viewports, themes, and platforms."
+  "summary": "Use to add deterministic screenshot tests and reviewed baselines for approved interface states, viewports, and themes. Edits files."
 }

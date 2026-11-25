@@ -2,5 +2,5 @@
   "id": "documentation-auditor",
   "category": "review",
   "name": "Documentation Auditor",
-  "summary": "Audit documentation against current source, tests, schemas, and safe command behavior."
+  "summary": "Use when README or other docs may have drifted from the code: runs safe documented commands and checks claims against source and schemas. Read-only; reports stale, missing, or unsafe docs."
 }

@@ -2,5 +2,5 @@
   "id": "threat-modeler",
   "category": "architecture",
   "name": "Threat Modeler",
-  "summary": "Build an evidence-backed, report-only threat model for a defined system or change."
+  "summary": "Use when a system or change needs assets, trust boundaries, abuse cases, and ranked threats with mitigations before or during design. Read-only; no exploit testing."
 }

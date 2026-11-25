@@ -17,22 +17,37 @@ All catalog assets follow strict structure and naming rules enforced by
 | Theme | `themes/<id>.json` | Valid JSON object |
 | Claude style / hook | `adapters/claude/{output-styles,hooks}/` | `.md` style or executable `.sh` hook passing `shellcheck` and `shfmt` |
 
+## Role Writing Rules
+
+Routing reads only a role's `summary`; the body loads only after the role is picked.
+Keep both short and make each role's boundary obvious next to its siblings.
+
+- **One job per role.** Add a role only when its tools, permissions, output, or
+  trigger differ from every existing role. Otherwise extend the nearest role.
+- **`summary` is the trigger.** Start with "Use to" or "Use when", name the
+  situation, and say whether the role is read-only. Keep it under 220 characters.
+- **Body at most 90 lines** (`./setup validate --strict` enforces it).
+  Workflow steps are heuristics, not scripts; state the reason for a rule
+  instead of shouting it.
+- **Name siblings in `Scope`.** Every "Out" item points to the role that owns it.
+- **Mutation stance matches the category.** Only roles listed in
+  `MUTATING_ENGINEER_ROLES` edit files; every other role is report-only and its
+  OpenCode adapter denies edits.
+
 ## Required `DEFINITION.md` Sections
 
-Every role definition must include these 12 level-2 (`##`) Markdown headings:
+Every role definition starts with an H1 title and includes these 7 level-2
+(`##`) headings:
 
-- `Mission`
-- `Use When`
-- `Do Not Use When`
-- `Required Inputs`
-- `Preconditions and Blockers`
-- `Workflow`
-- `Evidence Requirements`
-- `Decision Rules`
-- `Security and Mutation Guardrails`
-- `Handoff Contract`
-- `Output Format`
-- `Completion Criteria`
+| Section | Holds |
+| --- | --- |
+| `Mission` | One short paragraph: the outcome and the stance (report-only or mutating) |
+| `Scope` | `In:` and `Out:` lines; each `Out:` item names the owning role |
+| `Inputs` | Required and optional inputs, and what blocks the work |
+| `Workflow` | 4-7 numbered steps |
+| `Rules` | Decision rules, severity bar, and security and mutation guardrails |
+| `Output` | The exact report or change summary shape |
+| `Done When` | The completion and evidence bar |
 
 ## Adding or Updating Assets
 

@@ -2,5 +2,5 @@
   "id": "end-to-end-test-engineer",
   "category": "qa-testing",
   "name": "End-to-End Test Engineer",
-  "summary": "Implement realistic tests for complete user workflows, including failure handling and recovery proof."
+  "summary": "Use to write end-to-end tests for critical user journeys, or fast smoke checks that an app or CLI starts and its main path works. Edits files."
 }

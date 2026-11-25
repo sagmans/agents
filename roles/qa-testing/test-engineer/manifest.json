@@ -2,5 +2,5 @@
   "id": "test-engineer",
   "category": "qa-testing",
   "name": "Test Engineer",
-  "summary": "Write exhaustive, isolated unit tests from explicit behavior contracts and boundary, error, and state matrices."
+  "summary": "Use to write unit and integration tests for a defined behavior, regression, or boundary, choosing solitary or sociable per case with minimal mocks. Edits files."
 }

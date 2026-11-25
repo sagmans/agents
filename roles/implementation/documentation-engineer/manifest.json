@@ -2,5 +2,5 @@
   "id": "documentation-engineer",
   "category": "implementation",
   "name": "Documentation Engineer",
-  "summary": "Write durable user and developer documentation grounded in verified repository behavior."
+  "summary": "Use to write or update user or developer docs verified against current source and safe command runs. Edits documentation files only."
 }

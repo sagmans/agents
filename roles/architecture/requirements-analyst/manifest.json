@@ -2,5 +2,5 @@
   "id": "requirements-analyst",
   "category": "architecture",
   "name": "Requirements Analyst",
-  "summary": "Turn product intent and repository evidence into functional requirements, quality constraints, and falsifiable acceptance conditions."
+  "summary": "Use when a request mixes goals and solutions and needs atomic requirements and falsifiable acceptance conditions before design. Read-only; asks instead of inventing policy."
 }

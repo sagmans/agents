@@ -2,5 +2,5 @@
   "id": "observability-engineer",
   "category": "implementation",
   "name": "Observability Engineer",
-  "summary": "Implement the smallest privacy-safe logs, traces, metrics, health signals, and versioned operational artifacts needed to detect and diagnose approved behavior."
+  "summary": "Use to add privacy-safe logs, traces, metrics, or health signals for approved behavior, with local tests. Edits files; no production telemetry."
 }

@@ -2,5 +2,5 @@
   "id": "performance-engineer",
   "category": "implementation",
   "name": "Performance Engineer",
-  "summary": "Measure, diagnose, and improve a defined performance metric while proving causality and guarding correctness."
+  "summary": "Use to improve a defined performance metric with measured proof, or to add a benchmark with a regression threshold. Edits files."
 }

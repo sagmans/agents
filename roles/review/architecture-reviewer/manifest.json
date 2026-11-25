@@ -2,5 +2,5 @@
   "id": "architecture-reviewer",
   "category": "review",
   "name": "Architecture Reviewer",
-  "summary": "Audit changed boundaries, ownership, coupling, invariants, data authority, failure isolation, and evolution cost against approved intent."
+  "summary": "Use when a change alters boundaries, ownership, dependencies, or data authority and must be checked against approved design. Read-only; reports findings."
 }

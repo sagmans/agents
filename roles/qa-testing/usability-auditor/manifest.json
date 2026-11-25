@@ -2,5 +2,5 @@
   "id": "usability-auditor",
   "category": "qa-testing",
   "name": "Usability Auditor",
-  "summary": "Find task-level usability friction through structured walkthroughs and supplied user evidence without confusing expert judgment with user research."
+  "summary": "Use to find task-level friction in a changed interface through structured walkthroughs and supplied user evidence. Read-only; expert review, not user research."
 }

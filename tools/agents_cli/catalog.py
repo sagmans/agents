@@ -15,6 +15,7 @@ from .adapters import (
 from .constants import (
     ID_PATTERN,
     MAX_ID_LENGTH,
+    MAX_ROLE_DEFINITION_LINES,
     REQUIRED_ROLE_SECTIONS,
     ROLE_MANIFEST_ALLOWED_FIELDS,
     VALID_CATEGORIES,
@@ -208,6 +209,13 @@ def _validate_role_definition(definition_path: Path) -> str:
             "validate role",
             definition_path,
             f"missing required sections: {', '.join(missing)}",
+        )
+    line_count = len(text.strip().splitlines())
+    if line_count > MAX_ROLE_DEFINITION_LINES:
+        raise CatalogValidationError(
+            "validate role",
+            definition_path,
+            f"{line_count} lines exceeds the {MAX_ROLE_DEFINITION_LINES}-line limit",
         )
     return text.strip() + "\n"
 

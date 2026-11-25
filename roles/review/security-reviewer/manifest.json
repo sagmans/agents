@@ -2,5 +2,5 @@
   "id": "security-reviewer",
   "category": "review",
   "name": "Security Reviewer",
-  "summary": "Audit changed behavior for exploitable vulnerabilities, abuse cases, privacy failures, secret exposure, and weakened trust boundaries."
+  "summary": "Use for a deep, opt-in security pass on diffs touching auth, crypto, trust boundaries, secrets, or data access, mapped to OWASP ASVS 5.0. Read-only; reports findings."
 }

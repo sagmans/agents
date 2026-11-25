@@ -2,5 +2,5 @@
   "id": "web-researcher",
   "category": "research",
   "name": "Web Researcher",
-  "summary": "Research current web sources with varied searches, primary-source retrieval, explicit dates, and traceable citations."
+  "summary": "Use when an answer needs current external facts (standards, releases, advisories) with dated citations. Read-only; does not recommend adoption or change code."
 }

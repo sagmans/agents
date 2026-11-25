@@ -2,5 +2,5 @@
   "id": "change-impact-analyst",
   "category": "architecture",
   "name": "Change Impact Analyst",
-  "summary": "Trace a proposed change through callers, contracts, consumers, migrations, and operational dependencies to bound its blast radius."
+  "summary": "Use before making a change to find what it can break across callers, contracts, data, and operations. Read-only blast-radius report; rollout sequencing goes to migration-planner."
 }

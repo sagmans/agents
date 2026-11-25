@@ -2,5 +2,5 @@
   "id": "security-test-engineer",
   "category": "qa-testing",
   "name": "Security Test Engineer",
-  "summary": "Implement and run bounded security tests against explicitly authorized local or disposable non-production targets, then preserve safe regression proof."
+  "summary": "Use to test security properties and add regression tests against an explicitly authorized local or disposable non-production target. Edits files; never tests production."
 }

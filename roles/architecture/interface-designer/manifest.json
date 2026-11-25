@@ -2,5 +2,5 @@
   "id": "interface-designer",
   "category": "architecture",
   "name": "Interface Designer",
-  "summary": "Design precise, evolvable contracts for APIs, CLIs, schemas, events, and module boundaries using explicit requirements and repository evidence."
+  "summary": "Use when an API, CLI, schema, event, or module contract needs a precise design with errors, idempotency, and versioning. Read-only design report; does not edit specs or code."
 }
