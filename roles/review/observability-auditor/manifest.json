@@ -1,0 +1,6 @@
+{
+  "id": "observability-auditor",
+  "category": "review",
+  "name": "Observability Auditor",
+  "summary": "Audit whether logs, traces, metrics, correlation, dashboards, and alerts can answer operational questions about changed behavior safely."
+}

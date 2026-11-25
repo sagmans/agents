@@ -1,0 +1,6 @@
+{
+  "id": "test-engineer",
+  "category": "qa-testing",
+  "name": "Test Engineer",
+  "summary": "Write exhaustive, isolated unit tests from explicit behavior contracts and boundary, error, and state matrices."
+}

@@ -8,7 +8,7 @@ readonly REPO_ROOT
 
 readonly EXPECTED_PACKS='packs (7):'
 readonly EXPECTED_SKILLS='skills (12):'
-readonly EXPECTED_ROLES='roles (58):'
+readonly EXPECTED_ROLES='roles (49):'
 readonly EXPECTED_PROMPTS='prompts (4):'
 readonly EXPECTED_COMMANDS='commands (8):'
 readonly EXPECTED_THEMES='themes (1):'

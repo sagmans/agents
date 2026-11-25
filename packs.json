@@ -1,6 +1,14 @@
 {
   "packs": [
     {
+      "id": "core",
+      "name": "Core",
+      "summary": "General-purpose fallback and read-only codebase exploration that every workflow needs.",
+      "skills": [],
+      "prompts": [],
+      "commands": []
+    },
+    {
       "id": "delivery",
       "name": "Delivery",
       "summary": "Commit, branch, review-triage, tag, and ship repository changes.",
@@ -26,7 +34,7 @@
     {
       "id": "review",
       "name": "Review",
-      "summary": "Code quality, architecture, security review, and handoff reporting.",
+      "summary": "Report-only reviews of correctness, security, maintainability, architecture, tests, docs, comments, compatibility, and observability.",
       "skills": [
         "create-agentsmd",
         "decomposition-opportunities",
@@ -47,7 +55,7 @@
     {
       "id": "architecture",
       "name": "Architecture",
-      "summary": "System boundaries, domain modeling, interface design, and migration planning.",
+      "summary": "Requirements, system boundaries, interfaces, data models, threat models, and change and migration planning.",
       "skills": [],
       "prompts": [],
       "commands": [
@@ -57,7 +65,7 @@
     {
       "id": "implementation",
       "name": "Implementation",
-      "summary": "Mutating feature delivery, bug fixes, refactors, performance, and build work.",
+      "summary": "Mutating feature delivery, bug fixes, refactors, performance, build, docs, observability, and static-analysis work.",
       "skills": [],
       "prompts": [],
       "commands": []
@@ -65,15 +73,15 @@
     {
       "id": "qa-testing",
       "name": "QA & Testing",
-      "summary": "Automated test engineering and browser, mobile, terminal, usability, and localization QA.",
+      "summary": "Test strategy and engineering, prompt evals, and browser, terminal, mobile, desktop, accessibility, usability, and localization QA.",
       "skills": [],
       "prompts": [],
       "commands": []
     },
     {
-      "id": "ops-security",
-      "name": "Operations & Security",
-      "summary": "CI failure triage, incident root-cause analysis, observability, release readiness, and dependency risk.",
+      "id": "operations",
+      "name": "Operations",
+      "summary": "CI watching and failure triage, release readiness, incident root-cause analysis, dependency risk, and Cloudflare inspection.",
       "skills": [],
       "prompts": [],
       "commands": []
@@ -81,7 +89,7 @@
     {
       "id": "research",
       "name": "Research",
-      "summary": "Codebase exploration, upstream library documentation, and external web research.",
+      "summary": "Current web research and version-scoped upstream library documentation.",
       "skills": [],
       "prompts": [],
       "commands": []

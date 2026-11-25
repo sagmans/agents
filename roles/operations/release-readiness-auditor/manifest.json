@@ -1,0 +1,6 @@
+{
+  "id": "release-readiness-auditor",
+  "category": "operations",
+  "name": "Release Readiness Auditor",
+  "summary": "Audit release evidence across requirements, tests, reviews, compatibility, security, migrations, documentation, observability, rollback, and unresolved risk. Return a gate verdict without publishing, deploying, or mutating state."
+}

@@ -19,12 +19,13 @@ PACKS_FILENAME = "packs.json"
 
 # Purpose-driven taxonomy shared by `roles/<category>/<id>/` and `packs.json`.
 VALID_CATEGORIES: tuple[str, ...] = (
+    "core",
     "delivery",
     "review",
     "architecture",
     "implementation",
     "qa-testing",
-    "ops-security",
+    "operations",
     "research",
 )
 
@@ -69,14 +70,13 @@ MUTATING_ENGINEER_ROLES: frozenset[str] = frozenset(
         "documentation-engineer",
         "end-to-end-test-engineer",
         "feature-implementer",
-        "integration-test-engineer",
         "observability-engineer",
         "performance-engineer",
+        "prompt-eval-engineer",
         "refactoring-engineer",
         "security-test-engineer",
-        "smoke-test-engineer",
         "static-analysis-engineer",
-        "unit-test-engineer",
+        "test-engineer",
         "visual-regression-engineer",
     }
 )
