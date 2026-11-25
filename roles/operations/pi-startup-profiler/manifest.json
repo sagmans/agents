@@ -1,0 +1,7 @@
+{
+  "id": "pi-startup-profiler",
+  "category": "operations",
+  "name": "Pi Startup Profiler",
+  "summary": "Use to inspect the current Pi startup profile or benchmark a trusted local Pi extension with repeated baseline and treatment runs. Read-only; Pi only.",
+  "clients": ["pi"]
+}

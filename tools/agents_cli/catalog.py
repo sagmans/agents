@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .adapters import (
     check_orphan_role_adapters,
@@ -20,8 +20,11 @@ from .constants import (
     MAX_ROLE_WORKFLOW_STEPS,
     MIN_ROLE_WORKFLOW_STEPS,
     REQUIRED_ROLE_SECTIONS,
+    ROLE_APPENDIX_CLIENTS,
+    ROLE_APPENDIX_FILENAME,
     ROLE_MANIFEST_ALLOWED_FIELDS,
     ROLE_SUMMARY_PREFIXES,
+    SUPPORTED_CLIENTS,
     VALID_CATEGORIES,
     role_guardrail,
 )
@@ -52,6 +55,13 @@ class RolePackage:
     definition_path: Path
     pi_metadata: dict[str, Any]
     opencode_metadata: dict[str, Any]
+    # Clients the role installs into; a role bound to one client's tools names only that client.
+    clients: tuple[str, ...] = SUPPORTED_CLIENTS
+    # Client-only tool bindings appended below the shared definition, keyed by client.
+    appendices: dict[str, str] = field(default_factory=dict[str, str])
+
+    def supports(self, client: str) -> bool:
+        return client in self.clients
 
 
 @dataclass(frozen=True)
@@ -321,6 +331,7 @@ def _load_role_dir(
         oc_meta = _read_catalog_json(oc_path, "validate opencode metadata")
         validate_opencode_metadata(role_id, oc_meta, oc_path)
 
+    clients = _validate_role_clients(manifest.get("clients"), manifest_path)
     return RolePackage(
         role_id=role_id,
         category=expected_category,
@@ -331,7 +342,55 @@ def _load_role_dir(
         definition_path=definition_path,
         pi_metadata=pi_meta,
         opencode_metadata=oc_meta,
+        clients=clients,
+        appendices=_load_role_appendices(repo_root, role_id, clients),
     )
+
+
+def _validate_role_clients(raw: Any, manifest_path: Path) -> tuple[str, ...]:
+    """Default to every client; an explicit list must be a non-empty known subset."""
+    if raw is None:
+        return SUPPORTED_CLIENTS
+    if (
+        not isinstance(raw, list)
+        or not raw
+        or any(c not in SUPPORTED_CLIENTS for c in cast(list[object], raw))
+        or len(set(cast(list[str], raw))) != len(cast(list[str], raw))
+    ):
+        raise CatalogValidationError(
+            "validate role",
+            manifest_path,
+            f"clients must be a non-empty unique list drawn from {list(SUPPORTED_CLIENTS)}",
+        )
+    picked = set(cast(list[str], raw))
+    return tuple(c for c in SUPPORTED_CLIENTS if c in picked)
+
+
+def _load_role_appendices(
+    repo_root: Path, role_id: str, clients: tuple[str, ...]
+) -> dict[str, str]:
+    """Load client-only tool bindings; frontmatter in them would hijack rendered metadata."""
+    appendices: dict[str, str] = {}
+    for client in ROLE_APPENDIX_CLIENTS:
+        path = (
+            repo_root / "adapters" / client / "roles" / role_id / ROLE_APPENDIX_FILENAME
+        )
+        if not path.exists():
+            continue
+        _validate_contained_path(path, repo_root, "validate role appendix")
+        if client not in clients:
+            raise CatalogValidationError(
+                "validate role appendix", path, f"role does not install into {client}"
+            )
+        text = _read_utf8_text(path, "validate role appendix").strip()
+        if not text or text.startswith("---"):
+            raise CatalogValidationError(
+                "validate role appendix",
+                path,
+                "appendix must be non-empty Markdown without YAML frontmatter",
+            )
+        appendices[client] = text + "\n"
+    return appendices
 
 
 def _load_roles_tree(resolved_root: Path) -> dict[str, RolePackage]:

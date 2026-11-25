@@ -11,7 +11,7 @@ flowchart LR
   SRC["Portable Catalog (skills/, roles/, prompts/, themes/)"] --> CLI["./setup (Python 3 stdlib)"]
   SRC --> PKG["Native Manifests (package.json, .claude-plugin/, npx skills)"]
   ADP["Client Adapters (adapters/{pi,opencode,claude,codex,gemini})"] --> CLI
-  MM["Optional --model-map JSON"] --> CLI
+  MM["User-local model choices (~/.config/agents/config.json)"] --> CLI
   CLI --> OUT["Target Client Homes (~/.agents, ~/.pi, ~/.config/opencode, ~/.claude, ~/.codex, ~/.cursor, ~/.gemini)"]
 ```
 
@@ -21,7 +21,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | Packs | 8 | `packs.json` | `core`, `delivery`, `review`, `architecture`, `implementation`, `qa-testing`, `operations`, `research` |
 | Skills | 12 | `skills/` | Git, commit, PR triage/merge, diff guide, report card, AGENTS.md |
-| Roles | 50 | `roles/<category>/` | 35 read-only review/analysis roles + 15 mutating roles |
+| Roles | 51 | `roles/<category>/` | 36 read-only review/analysis roles + 15 mutating roles; one is Pi-only |
 | Pi Prompts | 4 | `prompts/` | Deep code review, security audit, test review, decomposition |
 | OpenCode Commands | 8 | `adapters/opencode/commands/` | Slash-command workflows for commit, issue, PR, handoff, release |
 | Pi Theme | 1 | `themes/` | `violet-orbit.json` |
@@ -38,7 +38,7 @@ flowchart LR
 | `architecture` | 0 | 9 | 0 | 1 | Requirements, boundaries, interfaces, data models, threat models, and change and migration plans |
 | `implementation` | 0 | 9 | 0 | 0 | Mutating features, fixes, refactors, performance, build, docs, observability, and static analysis |
 | `qa-testing` | 0 | 13 | 0 | 0 | Test strategy and engineering, prompt evals, and browser, terminal, mobile, desktop, a11y, usability, and l10n QA |
-| `operations` | 0 | 6 | 0 | 0 | CI watching and triage, release readiness, incident RCA, dependency risk, and Cloudflare inspection |
+| `operations` | 0 | 7 | 0 | 0 | CI watching and triage, release readiness, incident RCA, dependency risk, Cloudflare inspection, and Pi startup profiling |
 | `research` | 0 | 2 | 0 | 0 | Current web research and version-scoped library documentation |
 
 ## Quick Start
@@ -72,8 +72,8 @@ cd agents
 # Preview full deployment first
 ./setup --all --dry-run
 
-# Install all assets across supported clients (with optional model map & Claude styles)
-./setup --all --styles --model-map adapters/pi/model-map.example.json
+# Install all assets across supported clients, plus Claude styles
+./setup --all --styles
 
 # Selective install by category pack, asset ID, or snapshot copy
 ./setup --pack delivery --pack review --client claude
@@ -85,6 +85,30 @@ cd agents
 ./setup status
 ./setup uninstall
 ```
+
+### Choosing Models
+
+The catalog ships no provider or model names. A role renders with no `model`
+field, so each client uses its own default, until you choose a model. Choices
+live in a user-local file, `$XDG_CONFIG_HOME/agents/config.json` (by default
+`~/.config/agents/config.json`, mode `0600`), never in this repository.
+Install, status, and render read it automatically.
+
+```sh
+./setup models                     # show the file path and every choice
+./setup models edit                # choose interactively
+./setup models set --client pi --model <provider/model> --thinking high
+./setup models set --client pi --category review --thinking max
+./setup models set --client opencode --role feature-implementer --model <id>
+./setup models clear --client pi --role feature-implementer
+./setup models import my-models.json   # merge a file with the same schema
+./setup --all --no-config          # ignore the file for one run
+```
+
+A role choice overrides a category choice, which overrides the client-wide
+choice; each field (`model`, `thinking`) merges on its own. `thinking` applies
+to Pi only. Non-interactive runs never add a model on their own. See
+[Model choices](docs/compatibility.md#model-choices) for the file schema.
 
 Pi skills installed with `./setup --client pi` go to `~/.agents/skills`, which
 Pi discovers directly. Roles, prompts, and themes remain under `~/.pi/agent`.

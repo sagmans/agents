@@ -20,7 +20,8 @@ from .fs_ops import (
     validate_target_path,
     write_manifest,
 )
-from .render import ModelMap, render_role_for_client
+from .local_config import LocalConfig
+from .render import render_role_for_client
 
 
 @dataclass(frozen=True)
@@ -35,7 +36,7 @@ class Selection:
     theme_ids: tuple[str, ...]
     include_styles: bool = False
     copy_skills: bool = False
-    model_map: ModelMap = field(default_factory=ModelMap)
+    config: LocalConfig = field(default_factory=LocalConfig)
     dry_run: bool = False
     sync: bool = False
 
@@ -149,9 +150,10 @@ def _plan_skills_and_roles(
     if "roles" in subpaths:
         dest_dir = validate_target_path(catalog.repo_root, home / subpaths["roles"])
         for role_id in sel.role_ids:
-            rendered = render_role_for_client(
-                catalog.roles[role_id], client, sel.model_map
-            )
+            role = catalog.roles[role_id]
+            if not role.supports(client):
+                continue
+            rendered = render_role_for_client(role, client, sel.config)
             entries.append(
                 PlannedEntry(
                     dest_dir=dest_dir,
@@ -436,7 +438,7 @@ def _client_status_for_dir(
         theme_ids=sel.theme_ids,
         include_styles=sel.include_styles,
         copy_skills=sel.copy_skills,
-        model_map=sel.model_map,
+        config=sel.config,
         dry_run=True,
         sync=sel.sync,
     )

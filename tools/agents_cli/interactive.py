@@ -10,8 +10,8 @@ from .catalog import Catalog
 from .constants import SUPPORTED_CLIENTS
 from .deploy import Selection
 from .errors import RenderError
+from .local_config import LocalConfig
 from .packs import expand_pack_assets
-from .render import ModelMap, load_model_map
 
 InputFn = Callable[[str], str]
 _QUIT_TOKENS: frozenset[str] = frozenset({"q", "quit", "exit"})
@@ -150,7 +150,7 @@ def run_interactive_wizard(
     home: Path,
     default_copy: bool = False,
     default_dry_run: bool = False,
-    default_model_map: Path | None = None,
+    config: LocalConfig | None = None,
     input_fn: InputFn = input,
 ) -> Selection | None:
     """Guide interactive client/asset selection cleanly before any file writes."""
@@ -160,7 +160,7 @@ def run_interactive_wizard(
             home=home,
             default_copy=default_copy,
             default_dry_run=default_dry_run,
-            default_model_map=default_model_map,
+            config=config if config is not None else LocalConfig(),
             input_fn=input_fn,
         )
     except (EOFError, KeyboardInterrupt, _WizardCancelled):
@@ -174,7 +174,7 @@ def _run_wizard_prompts(
     home: Path,
     default_copy: bool,
     default_dry_run: bool,
-    default_model_map: Path | None,
+    config: LocalConfig,
     input_fn: InputFn,
 ) -> Selection | None:
     print("agents setup wizard (plug-and-play installer; enter 'q' to quit)")
@@ -201,17 +201,6 @@ def _run_wizard_prompts(
     copy_skills = _prompt_yes_no(
         "Copy skill directories instead of symlinking?", input_fn, default=default_copy
     )
-    default_mm_str = str(default_model_map) if default_model_map else ""
-    model_map_raw = _prompt_line(
-        f"Optional --model-map JSON path [{default_mm_str or 'none'}]: ",
-        input_fn,
-        default_mm_str,
-    )
-    model_map: ModelMap = (
-        load_model_map(Path(model_map_raw))
-        if model_map_raw and model_map_raw != "none"
-        else load_model_map(None)
-    )
     dry_run = _prompt_yes_no(
         "Preview changes with --dry-run first?", input_fn, default=default_dry_run
     )
@@ -220,6 +209,10 @@ def _run_wizard_prompts(
     print(f"  clients  : {', '.join(clients)}")
     print(f"  skills   : {len(skill_ids)} ({'copy' if copy_skills else 'symlink'})")
     print(f"  roles    : {len(role_ids)}")
+    print(
+        f"  models   : {config.entry_count()} choice(s) from the local config"
+        " (change with `./setup models edit`)"
+    )
     print(
         f"  extras   : prompts={len(prompt_ids)} commands={len(command_ids)} themes={len(theme_ids)} styles={include_styles}"
     )
@@ -235,7 +228,7 @@ def _run_wizard_prompts(
         theme_ids=theme_ids,
         include_styles=include_styles,
         copy_skills=copy_skills,
-        model_map=model_map,
+        config=config,
         dry_run=dry_run,
         sync=False,
     )

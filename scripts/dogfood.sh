@@ -8,11 +8,13 @@ readonly REPO_ROOT
 
 readonly EXPECTED_PACKS='packs (8):'
 readonly EXPECTED_SKILLS='skills (12):'
-readonly EXPECTED_ROLES='roles (50):'
+readonly EXPECTED_ROLES='roles (51):'
 readonly EXPECTED_PROMPTS='prompts (4):'
 readonly EXPECTED_COMMANDS='commands (8):'
 readonly EXPECTED_THEMES='themes (1):'
-readonly EXPECTED_PI_MODEL='model: "anthropic/claude-sonnet-4-5"'
+# Placeholder IDs: the catalog ships no provider or model names, so tests use neutral ones.
+readonly TEST_MODEL='example-provider/model-a'
+readonly TEST_ROLE_MODEL='example-provider/model-b'
 readonly SHARED_SKILLS_SUBPATH='.agents/skills'
 readonly LEGACY_PI_SKILLS_SUBPATH='.pi/agent/skills'
 readonly UNMANAGED_MARKER='user-owned-content'
@@ -56,6 +58,10 @@ assert_not_contains() {
 
 cd "$REPO_ROOT"
 
+# Never read or write the real user's model config: calls without --home use a scratch
+# XDG config directory, and calls with --home read only that sandbox.
+export XDG_CONFIG_HOME="$TMP_DIR/xdg"
+
 # 1. Validate catalog counts and strict invariants
 validate_out="$(./setup validate --strict)"
 printf '%s\n' "$validate_out"
@@ -78,15 +84,43 @@ h1="$TMP_DIR/h1"
 ./setup --dry-run --all --home "$h1" >/dev/null
 [ ! -e "$h1" ] || fail "dry-run created $h1"
 
-# 3. Full clean-room installation with model map and Claude styles
-./setup --all --styles --model-map adapters/pi/model-map.example.json --home "$h1" >/dev/null
+# 3. Full clean-room installation with no model config renders no model field anywhere
+./setup --all --styles --home "$h1" >/dev/null
+if grep -rlq '^model:' "$h1/.pi/agent/agents" "$h1/.config/opencode/agents" "$h1/.claude/agents" \
+	"$h1/.codex/agents" "$h1/.cursor/agents" "$h1/.gemini/agents"; then
+	fail "a role rendered a model field without a model config"
+fi
+[ ! -e "$h1/.config/agents" ] || fail "install without a choice created a model config"
+assert_file "$h1/.pi/agent/agents/pi-startup-profiler.md"
+[ ! -e "$h1/.claude/agents/pi-startup-profiler.md" ] || fail "Pi-only role installed into Claude"
+
+# 3b. Model choices live in the user-local config and cascade role > category > client
+./setup models set --client pi --model "$TEST_MODEL" --thinking high --home "$h1" >/dev/null
+./setup models set --client pi --category review --thinking max --home "$h1" >/dev/null
+./setup models set --client pi --role architecture-reviewer --model "$TEST_ROLE_MODEL" --home "$h1" >/dev/null
+config_mode="$(stat -f '%Lp' "$h1/.config/agents/config.json" 2>/dev/null || stat -c '%a' "$h1/.config/agents/config.json")"
+[ "$config_mode" = 600 ] || fail "model config is not owner-only: $config_mode"
+if ./setup models set --client claude --thinking high --home "$h1" >/dev/null 2>&1; then
+	fail "thinking accepted for a client without thinking support"
+fi
+if ./setup models set --client pi --role no-such-role --model "$TEST_MODEL" --home "$h1" >/dev/null 2>&1; then
+	fail "model choice accepted for an unknown role"
+fi
+./setup --all --styles --home "$h1" >/dev/null
 # Pi discovers the shared location natively; a second deployment causes collisions.
 assert_symlink "$h1/$SHARED_SKILLS_SUBPATH/commit"
 [ ! -e "$h1/$LEGACY_PI_SKILLS_SUBPATH" ] || fail "installer created duplicate Pi skills"
 assert_symlink "$h1/.claude/skills/commit"
 assert_symlink "$h1/.config/opencode/skills/pr-digest"
 assert_file "$h1/.pi/agent/agents/architecture-reviewer.md"
-assert_contains "$h1/.pi/agent/agents/architecture-reviewer.md" "$EXPECTED_PI_MODEL"
+assert_contains "$h1/.pi/agent/agents/architecture-reviewer.md" "model: \"$TEST_ROLE_MODEL\""
+assert_contains "$h1/.pi/agent/agents/architecture-reviewer.md" 'thinking: "max"'
+assert_contains "$h1/.pi/agent/agents/ci-watcher.md" "model: \"$TEST_MODEL\""
+assert_contains "$h1/.pi/agent/agents/ci-watcher.md" 'thinking: "high"'
+assert_not_contains "$h1/.claude/agents/ci-watcher.md" 'model:'
+assert_contains "$h1/.pi/agent/agents/browser-qa-specialist.md" '# Pi Tool Binding'
+assert_not_contains "$h1/.claude/agents/browser-qa-specialist.md" '# Pi Tool Binding'
+assert_contains "$h1/.config/opencode/agents/general-purpose.md" '# OpenCode Scope'
 assert_contains "$h1/.pi/agent/agents/architecture-reviewer.md" 'display_name: "Architecture Reviewer"'
 assert_file "$h1/.config/opencode/agents/architecture-reviewer.md"
 assert_contains "$h1/.config/opencode/agents/architecture-reviewer.md" 'permissions: ['
@@ -104,9 +138,9 @@ hook_out="$(printf '{}' | "$h1/.claude/hooks/visual-reminder.sh")"
 [ -n "$hook_out" ] || fail "Claude visual-reminder hook emitted empty stdout"
 
 # 4. Idempotent rerun and status check across all clients
-rerun_out="$(./setup --all --styles --model-map adapters/pi/model-map.example.json --home "$h1")"
+rerun_out="$(./setup --all --styles --home "$h1")"
 printf '%s\n' "$rerun_out" | grep -Fq 'written=0 ' || fail "rerun rewrote unchanged files: $rerun_out"
-status_out="$(./setup status --model-map adapters/pi/model-map.example.json --home "$h1")"
+status_out="$(./setup status --home "$h1")"
 for client in pi opencode claude codex cursor gemini; do
 	printf '%s\n' "$status_out" | grep -Eq "^${client}: installed=[1-9][0-9]* stale=0 missing=0 " ||
 		fail "unexpected status for $client: $status_out"
@@ -194,7 +228,7 @@ printf '%s\n' "$pack_status" | grep -Fq 'opencode: installed=25 stale=0 missing=
 	fail "unexpected pack status: $pack_status"
 
 h_wiz="$TMP_DIR/h_wiz"
-printf 'codex\nresearch\nn\n\nn\ny\n' | ./setup --interactive --home "$h_wiz" >/dev/null
+printf 'codex\nresearch\nn\nn\ny\n' | ./setup --interactive --home "$h_wiz" >/dev/null
 assert_file "$h_wiz/.codex/agents/web-researcher.md"
 assert_file "$h_wiz/.codex/agents/codebase-explorer.md"
 [ ! -e "$h_wiz/.codex/skills/commit" ] || fail "research pack unexpectedly installed delivery skill"
@@ -210,31 +244,44 @@ fi
 printf '%s\n' "$mix_pack_err" | grep -Fq 'cannot combine --all with --pack' ||
 	fail "unexpected --all/--pack conflict error: $mix_pack_err"
 
-# 10. Overlay client_metadata and role_appendices render cleanly and reject frontmatter injection
-overlay_file="$TMP_DIR/overlay.json"
-cat >"$overlay_file" <<'EOF'
+# 10. Imported config sets Pi client metadata; injected frontmatter and bad keys fail closed
+import_file="$TMP_DIR/import.json"
+cat >"$import_file" <<'EOF'
 {
+  "version": 1,
   "client_metadata": {
     "pi": {
       "extensions": true,
       "exclude_extensions": ["pi-nvim", "pi-subagents"]
     }
   },
-  "role_appendices": {
-    "pi:browser-qa-specialist": "## Local Tool Binding\n\nUse configured local browser proxy."
-  }
+  "models": {"opencode": {"categories": {"core": {"model": "example-provider/model-c"}}}}
 }
 EOF
-rendered_browser="$(./setup render browser-qa-specialist --client pi --model-map "$overlay_file")"
-printf '%s\n' "$rendered_browser" | grep -Fq 'extensions: true' || fail "missing overlay extensions"
-printf '%s\n' "$rendered_browser" | grep -Fq 'exclude_extensions: ["pi-nvim", "pi-subagents"]' || fail "missing overlay exclude_extensions"
-printf '%s\n' "$rendered_browser" | grep -Fq '## Local Tool Binding' || fail "missing overlay appendix"
-
-bad_overlay="$TMP_DIR/bad-overlay.json"
-printf '{"role_appendices":{"pi:ci-watcher":"---\\ninjected: true\\n---\\n"}}' >"$bad_overlay"
-if ./setup render ci-watcher --client pi --model-map "$bad_overlay" >/dev/null 2>&1; then
-	fail "overlay frontmatter injection unexpectedly succeeded"
+./setup models import "$import_file" >/dev/null
+rendered_browser="$(./setup render browser-qa-specialist --client pi)"
+printf '%s\n' "$rendered_browser" | grep -Fq 'extensions: true' || fail "missing imported extensions"
+printf '%s\n' "$rendered_browser" | grep -Fq 'exclude_extensions: ["pi-nvim", "pi-subagents"]' || fail "missing imported exclude_extensions"
+./setup render codebase-explorer --client opencode | grep -Fq 'model: "example-provider/model-c"' ||
+	fail "category model choice not rendered"
+if ./setup render codebase-explorer --client opencode --no-config | grep -q '^model:'; then
+	fail "--no-config still rendered a model"
 fi
+
+bad_import="$TMP_DIR/bad-import.json"
+printf '{"models":{"pi":{"all":{"model":"x\\n---\\ninjected: true"}}}}' >"$bad_import"
+if ./setup models import "$bad_import" >/dev/null 2>&1; then
+	fail "model ID frontmatter injection unexpectedly succeeded"
+fi
+printf '{"role_appendices":{}}' >"$bad_import"
+if ./setup models import "$bad_import" >/dev/null 2>&1; then
+	fail "legacy overlay key unexpectedly accepted"
+fi
+
+# 10b. Interactive model editor writes only what the user typed
+printf 'opencode\nrole\nweb-researcher\nexample-provider/model-d\n\n' | ./setup models edit >/dev/null
+./setup render web-researcher --client opencode | grep -Fq 'model: "example-provider/model-d"' ||
+	fail "interactive model choice not rendered"
 
 # 11. Interactive quit leaves disk untouched and unknown ID fails closed
 h4="$TMP_DIR/h4"

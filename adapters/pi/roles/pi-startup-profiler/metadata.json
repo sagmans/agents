@@ -1,0 +1,8 @@
+{
+  "color": "#CFDC1A",
+  "tools": "*",
+  "skills": true,
+  "memory": "local",
+  "allowed_subagents": "all",
+  "prompt_mode": "replace"
+}

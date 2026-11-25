@@ -31,9 +31,36 @@ VALID_CATEGORIES: tuple[str, ...] = (
     "research",
 )
 
+# `clients` is optional: it limits a role bound to one client's tools to that client.
 ROLE_MANIFEST_ALLOWED_FIELDS: frozenset[str] = frozenset(
-    {"id", "category", "name", "summary"}
+    {"id", "category", "name", "summary", "clients"}
 )
+
+# Adapters that may carry a role's client-only tool bindings below the shared definition.
+ROLE_APPENDIX_CLIENTS: tuple[str, ...] = ("pi", "opencode")
+ROLE_APPENDIX_FILENAME = "APPENDIX.md"
+
+# Model choices are user data: they live outside every repository so the public catalog never
+# ships provider or model names, and `./setup` renders no model field when no choice exists.
+LOCAL_CONFIG_XDG_ENV = "XDG_CONFIG_HOME"
+LOCAL_CONFIG_DEFAULT_BASE = ".config"
+LOCAL_CONFIG_DIRNAME = "agents"
+LOCAL_CONFIG_FILENAME = "config.json"
+LOCAL_CONFIG_VERSION = 1
+LOCAL_CONFIG_DIR_MODE = 0o700
+LOCAL_CONFIG_FILE_MODE = 0o600
+LOCAL_CONFIG_ALLOWED_KEYS: frozenset[str] = frozenset(
+    {"version", "models", "client_metadata"}
+)
+MODEL_SCOPES: tuple[str, ...] = ("categories", "roles")
+MODEL_ENTRY_FIELDS: frozenset[str] = frozenset({"model", "thinking"})
+# Only Pi frontmatter carries a thinking level; other clients would ignore or reject it.
+THINKING_CLIENTS: frozenset[str] = frozenset({"pi"})
+MAX_MODEL_ID_LENGTH = 200
+# Provider/model IDs across clients use these characters; anything else is a typo or injection.
+MODEL_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$")
+# Interactive token that removes a stored choice instead of setting one.
+MODEL_CLEAR_TOKEN = "-"
 
 PACK_ENTRY_ALLOWED_FIELDS: frozenset[str] = frozenset(
     {"id", "name", "summary", "skills", "prompts", "commands"}
@@ -153,7 +180,8 @@ def role_guardrail(role_id: str) -> str:
     return REPORT_ONLY_GUARDRAIL
 
 
-# Model fields are omitted from tracked role metadata so users bind models via `--model-map`.
+# Model and thinking fields are omitted from tracked role metadata: both depend on the provider,
+# so users bind them in the local config that `./setup models` manages.
 PI_ALLOWED_METADATA_FIELDS: frozenset[str] = frozenset(
     {
         "tools",
@@ -162,7 +190,6 @@ PI_ALLOWED_METADATA_FIELDS: frozenset[str] = frozenset(
         "skills",
         "color",
         "prompt_mode",
-        "thinking",
         "max_turns",
         "isolation",
         "memory",

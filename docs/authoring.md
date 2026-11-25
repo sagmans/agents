@@ -9,8 +9,9 @@ All catalog assets follow strict structure and naming rules enforced by
 | --- | --- | --- |
 | Category pack | `packs.json` | Unique `id` in `VALID_CATEGORIES`, `name`, `summary`, and member `skills`, `prompts`, `commands` |
 | Skill | `skills/<id>/SKILL.md` | YAML frontmatter with matching `name` and non-empty `description` |
-| Role | `roles/<category>/<id>/` | `manifest.json` (`id`, `category`, `name`, `summary`) + `DEFINITION.md` |
-| Pi role adapter | `adapters/pi/roles/<id>/metadata.json` | Optional keys in `PI_ALLOWED_METADATA_FIELDS`; no hardcoded `model` |
+| Role | `roles/<category>/<id>/` | `manifest.json` (`id`, `category`, `name`, `summary`, optional `clients` list for a client-bound role) + `DEFINITION.md` |
+| Pi role adapter | `adapters/pi/roles/<id>/metadata.json` | Optional keys in `PI_ALLOWED_METADATA_FIELDS`; no `model` or `thinking` |
+| Role appendix | `adapters/{pi,opencode}/roles/<id>/APPENDIX.md` | Client-only tool bindings appended to that client's render; no frontmatter |
 | OpenCode adapter | `adapters/opencode/roles/<id>/metadata.json` | Optional keys in `OPENCODE_ALLOWED_METADATA_FIELDS`; non-mutating roles deny edits |
 | Prompt | `prompts/<id>.md` | Valid UTF-8 Markdown with H1 heading |
 | OpenCode command | `adapters/opencode/commands/<id>.md` | Valid UTF-8 Markdown matching Markdown lint rules |
@@ -63,9 +64,12 @@ templates do not count:
 
 1. Keep identifiers lowercase alphanumeric with hyphens or underscores
    (`^[a-z0-9][a-z0-9_-]*$`, max 64 chars).
-2. Omit machine-specific provider bindings and secrets; use `--model-map` for
-   model choices and `${ENV_VAR}` placeholders in `mcp/examples/`.
-3. Format shell scripts with `shfmt -w` and Python files with `ruff format`,
+2. Omit provider names, model IDs, thinking levels, and secrets. Users choose
+   models with `./setup models`; `scripts/personal-scan.sh` rejects provider
+   and model IDs. Use `${ENV_VAR}` placeholders in `mcp/examples/`.
+3. Add only first-party roles. Do not copy agents that third-party skills or
+   plugins install; those stay with their upstream package.
+4. Format shell scripts with `shfmt -w` and Python files with `ruff format`,
    then verify clean linting and strict validation:
 
 ```sh

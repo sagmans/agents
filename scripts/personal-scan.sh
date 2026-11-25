@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fail closed when private machine paths, internal issue keys, personal provider
-# IDs, or private repo references appear in tracked, untracked, or staged text.
+# IDs, provider/model IDs, or private repo references appear in tracked, untracked, or staged text.
 set -euo pipefail
 
 MODE="repo"
@@ -30,12 +30,13 @@ BANNED_REGEX+="|tail""scale|\.ts\.net"
 BANNED_REGEX+="|linear""\.app"
 BANNED_REGEX+="|AS""G-[0-9]+"
 BANNED_REGEX+="|assag""man"
-BANNED_REGEX+="|qwen-token""-plan/"
-BANNED_REGEX+="|(^|[^A-Za-z0-9_])za""i/"
-BANNED_REGEX+="|(^|[^A-Za-z0-9_])xa""i/"
-BANNED_REGEX+="|openai/gpt-5\.6""-sol"
+# Provider/model IDs: the catalog ships none, so users choose models in their local config.
+BANNED_REGEX+="|(^|[^A-Za-z0-9_.-])(anthro""pic|open""ai|goo""gle|xa""i|za""i|deep""seek|qw""en[a-z0-9-]*|moonshot""ai|mist""ral|meta-""llama|open""router|opencode""-go|claude""-code|github""-copilot)/[a-z0-9]"
+BANNED_REGEX+="|clau""de-(sonnet|opus|haiku|fable)-[0-9]"
+BANNED_REGEX+="|(^|[^A-Za-z0-9_])(gp""t|gemi""ni|gl""m|gro""k)-[0-9]"
+BANNED_REGEX+="|(^|[^A-Za-z0-9_])ki""mi-k[0-9]"
+BANNED_REGEX+="|(^|[^A-Za-z0-9_])qw""en[0-9]"
 BANNED_REGEX+="|poteto""-agent"
-BANNED_REGEX+="|pi-startup-""profiler"
 BANNED_REGEX+="|agents""box"
 BANNED_REGEX+="|pony""tail"
 BANNED_REGEX+="|her""dr"

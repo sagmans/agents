@@ -26,7 +26,11 @@ class CatalogValidationError(AgentsError):
 
 
 class RenderError(AgentsError):
-    """Raised when rendering role markdown or loading model mappings fails."""
+    """Raised when rendering role markdown fails."""
+
+
+class ConfigError(AgentsError):
+    """Raised when the user-local model config is unreadable, invalid, or misplaced."""
 
 
 class DestinationConflictError(AgentsError):

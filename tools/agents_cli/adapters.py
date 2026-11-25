@@ -15,7 +15,6 @@ from .constants import (
     VALID_PI_ISOLATIONS,
     VALID_PI_MEMORY_SCOPES,
     VALID_PI_PROMPT_MODES,
-    VALID_PI_THINKING_LEVELS,
     opencode_denies_edits,
 )
 from .errors import CatalogValidationError
@@ -58,7 +57,7 @@ def _validate_string_list_or_str(
 
 
 def validate_pi_metadata(metadata: dict[str, Any], path: Path) -> None:
-    """Enforce allowed Pi role metadata keys and omit hardcoded model bindings."""
+    """Enforce allowed Pi role metadata keys; model and thinking stay in the user-local config."""
     unknown = sorted(set(metadata) - PI_ALLOWED_METADATA_FIELDS)
     if unknown:
         raise CatalogValidationError(
@@ -73,9 +72,6 @@ def validate_pi_metadata(metadata: dict[str, Any], path: Path) -> None:
         )
     _validate_choice(
         metadata.get("prompt_mode"), VALID_PI_PROMPT_MODES, path, "prompt_mode"
-    )
-    _validate_choice(
-        metadata.get("thinking"), VALID_PI_THINKING_LEVELS, path, "thinking"
     )
     _validate_choice(metadata.get("isolation"), VALID_PI_ISOLATIONS, path, "isolation")
     _validate_choice(metadata.get("memory"), VALID_PI_MEMORY_SCOPES, path, "memory")
