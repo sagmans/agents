@@ -2,5 +2,5 @@
   "id": "general-purpose",
   "category": "core",
   "name": "General Purpose",
-  "summary": "Use as a fallback for a bounded task spanning several engineering concerns when no specialist fits. Edits files only when the caller permits; routes to a specialist when one fits."
+  "summary": "Use as a fallback for a bounded task spanning several engineering concerns when no specialist fits. Edits files when the task needs it and the client allows; routes to a specialist when one fits."
 }

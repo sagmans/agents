@@ -7,9 +7,7 @@ from typing import Any, cast
 
 from .constants import (
     HEX_COLOR_PATTERN,
-    MUTATING_ENGINEER_ROLES,
     OPENCODE_ALLOWED_METADATA_FIELDS,
-    OPENCODE_EDIT_DENIED_ROLES,
     PI_ALLOWED_METADATA_FIELDS,
     SAFE_KEY_PATTERN,
     VALID_OPENCODE_MODES,
@@ -18,6 +16,7 @@ from .constants import (
     VALID_PI_MEMORY_SCOPES,
     VALID_PI_PROMPT_MODES,
     VALID_PI_THINKING_LEVELS,
+    opencode_denies_edits,
 )
 from .errors import CatalogValidationError
 
@@ -147,9 +146,7 @@ def _validate_permission_rule(
 
 
 def _validate_opencode_permissions(role_id: str, permissions: Any, path: Path) -> None:
-    edit_denied = (
-        role_id not in MUTATING_ENGINEER_ROLES or role_id in OPENCODE_EDIT_DENIED_ROLES
-    )
+    edit_denied = opencode_denies_edits(role_id)
     if permissions is None:
         if edit_denied:
             raise CatalogValidationError(
@@ -186,7 +183,7 @@ def _validate_opencode_permissions(role_id: str, permissions: Any, path: Path) -
 def validate_opencode_metadata(
     role_id: str, metadata: dict[str, Any], path: Path
 ) -> None:
-    """Enforce read-only edit guards on non-mutating roles in OpenCode."""
+    """Enforce read-only edit guards on every role OpenCode must run read-only."""
     unknown = sorted(set(metadata) - OPENCODE_ALLOWED_METADATA_FIELDS)
     if unknown:
         raise CatalogValidationError(

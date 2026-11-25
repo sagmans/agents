@@ -11,8 +11,8 @@ from .adapters import validate_pi_metadata
 from .catalog import RolePackage
 from .constants import (
     DEFAULT_OPENCODE_DENY_RULE,
-    MUTATING_ENGINEER_ROLES,
     SUPPORTED_CLIENTS,
+    opencode_denies_edits,
 )
 from .errors import CatalogValidationError, RenderError
 from .fs_ops import read_json_object
@@ -310,7 +310,7 @@ def _render_opencode(
         pairs.append(("model", model))
 
     raw_perms: Any = meta.get("permissions")
-    if raw_perms is None and role.role_id not in MUTATING_ENGINEER_ROLES:
+    if raw_perms is None and opencode_denies_edits(role.role_id):
         raw_perms = [DEFAULT_OPENCODE_DENY_RULE]
     raw_lines: list[tuple[str, str]] = []
     if isinstance(raw_perms, list) and raw_perms:
